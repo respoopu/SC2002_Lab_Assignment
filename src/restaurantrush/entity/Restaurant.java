@@ -106,7 +106,7 @@ public class Restaurant {
         log.add(customer + " arrives and joins the waiting queue (satisfaction " + customer.satisfaction() + ").");
     }
 
-    public ActionResult seat(Customer customer, Table table) {
+    ActionResult seat(Customer customer, Table table) {
         if (customer.status() != CustomerStatus.WAITING) {
             return ActionResult.fail(customer.id() + " is not waiting for a table (" + customer.status() + ")");
         }
@@ -119,7 +119,7 @@ public class Restaurant {
     }
 
     /** The customer chooses their dish; the bill is fixed now and never recalculated. */
-    public ActionResult placeOrder(Customer customer, int turn) {
+    ActionResult placeOrder(Customer customer, int turn) {
         if (customer.status() == CustomerStatus.WAITING) {
             return ActionResult.fail(customer.id() + " has not been seated yet");
         }
@@ -134,7 +134,7 @@ public class Restaurant {
         return ActionResult.ok(customer.id() + " orders " + item + " - bill " + price + ".");
     }
 
-    public ActionResult serve(Order order, int turn) {
+    ActionResult serve(Order order, int turn) {
         ActionResult check = order.canServe(turn);
         if (!check.success()) {
             return check;

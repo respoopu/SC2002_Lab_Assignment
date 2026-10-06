@@ -12,6 +12,7 @@ import restaurantrush.entity.RegularCustomer;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Scoreboard;
 import restaurantrush.entity.TurnLog;
+import restaurantrush.entity.Waiter;
 
 class StatusViewTest {
     private final StatusView view = new StatusView();
@@ -38,8 +39,10 @@ class StatusViewTest {
     void customerLineShowsTableAndOrderProgress() {
         Customer c3 = new RegularCustomer(3, 1);
         restaurant.admit(c3);
-        restaurant.seat(c3, restaurant.table(2));
-        restaurant.placeOrder(c3, 1);
+        Waiter waiter = new Waiter();
+        waiter.seat(restaurant, c3, restaurant.table(2));
+        waiter.startTurn();
+        waiter.takeOrder(restaurant, c3, 1);
         assertEquals("C3 (Regular) - ORDERED at table 2, satisfaction 100, Pasta $18.00: cooking 0/2",
                 view.describeCustomer(c3));
         assertEquals("C3's Pasta ($18.00): cooking 0/2", view.describeOrder(c3.order()));

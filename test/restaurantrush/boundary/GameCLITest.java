@@ -17,6 +17,7 @@ import restaurantrush.entity.Order;
 import restaurantrush.entity.RegularCustomer;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.TurnLog;
+import restaurantrush.entity.Waiter;
 
 class GameCLITest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -79,8 +80,10 @@ class GameCLITest {
 
     @Test
     void chefChoosesFromActiveOrdersOrWaits() {
-        restaurant.seat(restaurant.customer("C1"), restaurant.table(1));
-        restaurant.placeOrder(restaurant.customer("C1"), 1);
+        Waiter waiter = new Waiter();
+        waiter.seat(restaurant, restaurant.customer("C1"), restaurant.table(1));
+        waiter.startTurn();
+        waiter.takeOrder(restaurant, restaurant.customer("C1"), 1);
         Optional<Order> order = cli("1\n").chooseOrderToCook(restaurant);
         assertEquals("C1's Salad", order.orElseThrow().describe());
         assertEquals(Optional.empty(), cli("0\n").chooseOrderToCook(restaurant));

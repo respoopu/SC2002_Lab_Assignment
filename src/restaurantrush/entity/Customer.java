@@ -93,7 +93,7 @@ public abstract class Customer {
     }
 
     /** Applies one turn of waiting. Returns true if satisfaction has reached 0. */
-    public boolean decay() {
+    boolean decay() {
         reduceSatisfaction(lossPerTurn());
         return satisfaction == 0;
     }
