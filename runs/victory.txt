@@ -1,5 +1,5 @@
-# Restaurant Rush - victory run (base setting)
-# Expected: VICTORY - 5 paid, $66.00, average satisfaction 79.2
+# Restaurant Rush - victory run (base setting, C2 is a VIP and C3 a Critic)
+# Expected: VICTORY - 5 paid, $64.50, average satisfaction 78.0
 # Turn 1: seat C1 at table 1
 1
 1
@@ -32,7 +32,7 @@
 1
 # Turn 9: the Waiter has nothing to do; Chef cooks unit 2
 1
-# Turn 10: staff constrained - serve C3's Pasta now and let C4 wait
+# Turn 10: staff constrained - serve the Critic's Pasta fresh now (seating C4 first would make it cold: -20)
 3
 1
 # Turn 11: seat C4 at table 2

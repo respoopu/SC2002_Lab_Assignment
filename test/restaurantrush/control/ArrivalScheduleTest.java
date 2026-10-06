@@ -28,7 +28,7 @@ class ArrivalScheduleTest {
             }
         }
         assertEquals(List.of(1, 4, 7, 10, 13, 16), turns);
-        assertEquals(List.of("Regular", "Regular", "Regular", "Regular", "Regular", "Regular"), types);
+        assertEquals(List.of("Regular", "VIP", "Critic", "Regular", "Regular", "Regular"), types);
     }
 
     @Test

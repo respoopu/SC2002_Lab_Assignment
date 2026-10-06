@@ -139,7 +139,9 @@ public class Restaurant {
         if (!check.success()) {
             return check;
         }
-        order.customer().markServed(turn);
+        Customer customer = order.customer();
+        customer.markServed(turn);
+        customer.onServed(order, turn, log);
         return ActionResult.ok(order.describe() + " is SERVED.");
     }
 

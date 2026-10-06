@@ -40,6 +40,14 @@ public abstract class Customer {
         return menu.itemFor(arrivalNo);
     }
 
+    /**
+     * Called right after this customer is served. Customers who react to the
+     * quality of service override this; by default nothing happens.
+     */
+    public void onServed(Order order, int turn, TurnLog log) {
+        // no reaction by default
+    }
+
     public String id() {
         return "C" + arrivalNo;
     }
