@@ -110,6 +110,10 @@ public abstract class Customer {
         satisfaction = Math.max(0, satisfaction - points);
     }
 
+    void recover(int points) {
+        satisfaction = Math.min(MAX_SATISFACTION, satisfaction + points);
+    }
+
     void seatAt(Table table) {
         requireStatus(CustomerStatus.WAITING);
         table.assign(this);
