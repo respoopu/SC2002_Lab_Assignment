@@ -1,0 +1,10 @@
+' Notes for the boundary classes (class-model.iuml).
+package boundary {
+  note right of GameCLI
+    <b>Boundary only</b>
+    GameCLI shows numbered menus, asks again on malformed
+    input and skips '#' lines in scripted runs. Whether a
+    move is legal is decided by the entity classes; GameCLI
+    only asks them (e.g. the read-only Restaurant.canSeat()).
+  end note
+}

@@ -1,0 +1,21 @@
+@startuml class-diagram
+' Restaurant Rush - full class diagram of the code at tag stage-3. The model is in class-model.iuml.
+' Render: docs/diagrams/render.sh (see docs/diagrams/README.md)
+!include class-model.iuml
+!include class-dependencies.iuml
+!include class-notes-boundary.iuml
+!include class-notes-control.iuml
+!include class-notes-restaurant.iuml
+!include class-notes-orders.iuml
+!include class-legend.iuml
+
+' layout hints only (no meaning): stack the packages top to bottom
+StatusView -[hidden]down- GameSetup
+InputEndedException -[hidden]down- GameSetup
+Kind -[hidden]down- Staff
+Seating -[hidden]down- Staff
+OrderStatus -[hidden]down- Money
+HappyHour -[hidden]down- TurnLog
+
+title Restaurant Rush - class diagram (final design, tag stage-3)
+@enduml

@@ -1,0 +1,576 @@
+' Restaurant Rush - the class model shared by every class diagram (code at tag stage-3).
+' Included by class-diagram.puml, class-diagram-overview.puml and class-detail-*.puml.
+' Tags say which detail page a class is ABSENT from: $x1 boundary, $x2 control,
+' $x3 restaurant and staff, $x4 customers, orders and menu.
+' Simple getters (a method named after the field it returns) sit inside !if $getters blocks,
+' so the detail pages can leave them out; the full diagram shows them.
+!if %not(%variable_exists("$getters"))
+!$getters = %true()
+!endif
+' $m("0..*") writes a multiplicity label, padded so it clears the line's end marker;
+' the overview sets $multiplicities to false and leaves them out.
+!if %not(%variable_exists("$multiplicities"))
+!$multiplicities = %true()
+!endif
+' Link groups: each detail page draws only the links owned by its own classes.
+!if %not(%variable_exists("$links_boundary"))
+!$links_boundary = %true()
+!endif
+!if %not(%variable_exists("$links_control"))
+!$links_control = %true()
+!endif
+!if %not(%variable_exists("$links_restaurant"))
+!$links_restaurant = %true()
+!endif
+!if %not(%variable_exists("$links_orders"))
+!$links_orders = %true()
+!endif
+!function $m($value, $pad="  ")
+!if $multiplicities
+!return '"' + $pad + $value + $pad + '"'
+!else
+!return ''
+!endif
+!endfunction
+' $ml() pads on the left only, keeping the label close to its own line.
+!function $ml($value, $pad="      ")
+!if $multiplicities
+!return '"' + $pad + $value + '"'
+!else
+!return ''
+!endif
+!endfunction
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 45
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+  ArrowColor #333333
+}
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #B8A060
+}
+hide empty members
+hide circle
+
+package "<<boundary>>  restaurantrush.boundary" as boundary $x3 $x4 #F3F7FF {
+  class Main <<final>> $x2 {
+    - Main()
+    + {static} main(args : String[]) : void
+    ~ {static} play(in : InputStream, out : PrintStream, echo : boolean) : void
+  }
+
+  class GameCLI {
+    - in : Scanner
+    - out : PrintStream
+    - echoInput : boolean
+    - view : StatusView
+    + GameCLI(in : InputStream, out : PrintStream, echoInput : boolean)
+    + showTurnHeader(turn : int, maxTurns : int) : void
+    + showMessage(message : String) : void
+    + showState(restaurant : Restaurant, scoreboard : Scoreboard,\n    availableTasks : List<String>) : void
+    + askActivateHappyHour(happyHour : HappyHour) : boolean
+    + chooseHostSeating(restaurant : Restaurant) : Optional<Seating>
+    + chooseWaiterTask(restaurant : Restaurant) : WaiterTask
+    + chooseOrderToCook(restaurant : Restaurant) : Optional<Order>
+    + showTurnEnd(turn : int, maxTurns : int, scoreboard : Scoreboard) : void
+    + showResult(victory : boolean, scoreboard : Scoreboard, config : GameConfig) : void
+    - pickCustomerToSeat(question : String, restaurant : Restaurant) : Optional<Customer>
+    - pick<T>(question : String, options : List<T>, label : Function<T,String>) : Optional<T>
+    - readChoice(prompt : String, min : int, max : int) : int
+    - nextAnswer() : String
+  }
+
+  class StatusView $x2 {
+    + header(turn : int, maxTurns : int) : String
+    + state(restaurant : Restaurant, scoreboard : Scoreboard,\n    availableTasks : List<String>) : String
+    + describeCustomer(customer : Customer) : String
+    + describeOrder(order : Order) : String
+    + describeTable(table : Table) : String
+    + turnEnd(turn : int, maxTurns : int, scoreboard : Scoreboard) : String
+    + result(victory : boolean, scoreboard : Scoreboard, config : GameConfig) : String
+    + {static} average(scoreboard : Scoreboard) : String
+    - {static} queue(waiting : List<Customer>) : String
+    - {static} statusLabel(status : CustomerStatus) : String
+    - {static} orderLabel(order : Order) : String
+    - {static} orderStatusLabel(order : Order) : String
+    - {static} mark(met : boolean) : String
+  }
+
+  class InputEndedException $x2 {
+    - {static} serialVersionUID : long
+    + InputEndedException()
+  }
+}
+
+package "<<control>>  restaurantrush.control" as control $x3 $x4 #F4FBF4 {
+  interface GameUI <<interface>> {
+    + {abstract} showTurnHeader(turn : int, maxTurns : int) : void
+    + {abstract} showMessage(message : String) : void
+    + {abstract} showState(restaurant : Restaurant, scoreboard : Scoreboard,\n    availableTasks : List<String>) : void
+    + {abstract} askActivateHappyHour(happyHour : HappyHour) : boolean
+    + {abstract} chooseHostSeating(restaurant : Restaurant) : Optional<Seating>
+    + {abstract} chooseWaiterTask(restaurant : Restaurant) : WaiterTask
+    + {abstract} chooseOrderToCook(restaurant : Restaurant) : Optional<Order>
+    + {abstract} showTurnEnd(turn : int, maxTurns : int, scoreboard : Scoreboard) : void
+    + {abstract} showResult(victory : boolean, scoreboard : Scoreboard, config : GameConfig) : void
+  }
+
+  class GameController {
+    - config : GameConfig
+    - restaurant : Restaurant
+    - scoreboard : Scoreboard
+    - schedule : ArrivalSchedule
+    - host : Host
+    - waiter : Waiter
+    - chef : Chef
+    - cashier : Cashier
+    - ui : GameUI
+    - turn : int
+    + GameController(config : GameConfig, restaurant : Restaurant,\n    schedule : ArrivalSchedule, host : Host, waiter : Waiter,\n    chef : Chef, cashier : Cashier, ui : GameUI)
+    + run() : boolean
+    ~ playTurn(t : int) : void
+    + currentTurn() : int
+!if $getters
+    + scoreboard() : Scoreboard
+!endif
+    - happyHourStep() : void
+    - hostStep() : void
+    - waiterStep() : void
+    - execute(task : WaiterTask) : ActionResult
+    - chefStep() : void
+    - report(result : ActionResult) : void
+    - flushLog() : void
+    - waiterHasWork() : boolean
+    - availableTasks() : List<String>
+  }
+
+  class GameSetup <<final>> {
+    + {static} EDITION : String {readOnly}
+    - GameSetup()
+    + {static} baseMenu() : Menu
+    + {static} baseGame(ui : GameUI) : GameController
+  }
+
+  class GameConfig <<record>> $x1 {
+    - maxTurns : int
+    - tableCount : int
+    - targetPaidCustomers : int
+    - targetRevenue : Money
+    - targetAverageSatisfaction : int
+    + GameConfig(maxTurns : int, tableCount : int, targetPaidCustomers : int,\n    targetRevenue : Money, targetAverageSatisfaction : int)
+    + {static} base() : GameConfig
+    + paidTargetMet(paidCount : int) : boolean
+    + revenueTargetMet(revenue : Money) : boolean
+    + satisfactionTargetMet(satisfactionSum : int, paidCount : int) : boolean
+    + isVictory(scoreboard : Scoreboard) : boolean
+  }
+
+  class ArrivalSchedule $x1 {
+    - arrivals : TreeMap<Integer, BiFunction<Integer,Integer,Customer>>
+    + add(turn : int, factory : BiFunction<Integer,Integer,Customer>) : ArrivalSchedule
+    + arrivalAt(turn : int) : Optional<Customer>
+    + {static} base() : ArrivalSchedule
+  }
+
+  class WaiterTask <<record>> {
+    - kind : WaiterTask.Kind
+    - customer : Customer [0..1]
+    - table : Table [0..1]
+    - order : Order [0..1]
+    + WaiterTask(kind : WaiterTask.Kind, customer : Customer, table : Table, order : Order)
+    + {static} seat(customer : Customer, table : Table) : WaiterTask
+    + {static} takeOrder(customer : Customer) : WaiterTask
+    + {static} serve(order : Order) : WaiterTask
+    + {static} waitTurn() : WaiterTask
+  }
+
+  enum "WaiterTask.Kind" as Kind <<enumeration>> $x1 {
+    SEAT
+    TAKE_ORDER
+    SERVE
+    WAIT
+  }
+
+  class Seating <<record>> {
+    - customer : Customer
+    - table : Table
+    + Seating(customer : Customer, table : Table)
+  }
+}
+
+package "<<entity>>  restaurantrush.entity" as entity #FFF7F0 {
+  class Restaurant $x4 {
+    - menu : Menu
+    - log : TurnLog
+    - happyHour : HappyHour
+    - tables : List<Table>
+    - waitingQueue : List<Customer>
+    - customers : List<Customer>
+    - orders : List<Order>
+    + Restaurant(menu : Menu, tableCount : int, log : TurnLog)
+    + Restaurant(menu : Menu, tableCount : int, log : TurnLog, happyHour : HappyHour)
+!if $getters
+    + menu() : Menu
+    + log() : TurnLog
+    + happyHour() : HappyHour
+    + tables() : List<Table>
+    + waitingQueue() : List<Customer>
+    + customers() : List<Customer>
+    + orders() : List<Order>
+!endif
+    + table(number : int) : Table
+    + customer(id : String) : Customer
+    + presentCustomers() : List<Customer>
+    + activeOrders() : List<Order>
+    + cookableOrders() : List<Order>
+    + servableOrders(turn : int) : List<Order>
+    + seatedWithoutOrder() : List<Customer>
+    + canSeatSomeone() : boolean
+    + admit(customer : Customer) : void
+    + canSeat(customer : Customer) : ActionResult
+    ~ seat(customer : Customer, table : Table) : ActionResult
+    ~ placeOrder(customer : Customer, turn : int) : ActionResult
+    ~ serve(order : Order, turn : int) : ActionResult
+    + finishEating(turn : int) : void
+    + recoverAwaitingCustomers(amount : int) : void
+    + applyWaitingDecay() : List<Customer>
+  }
+
+  abstract class Staff $x1 $x2 $x4 {
+    - role : String
+    - actedThisTurn : boolean
+    # Staff(role : String)
+!if $getters
+    + role() : String
+!endif
+    + hasActed() : boolean
+    + startTurn() : void
+    # perform(action : Supplier<ActionResult>) : ActionResult
+  }
+
+  class Host $x1 $x4 {
+    + Host()
+    + seat(restaurant : Restaurant, customer : Customer, table : Table) : ActionResult
+  }
+
+  class Waiter $x1 $x4 {
+    + Waiter()
+    + seat(restaurant : Restaurant, customer : Customer, table : Table) : ActionResult
+    + takeOrder(restaurant : Restaurant, customer : Customer, turn : int) : ActionResult
+    + serve(restaurant : Restaurant, order : Order, turn : int) : ActionResult
+  }
+
+  class Chef $x1 $x4 {
+    + Chef()
+    + cook(order : Order, turn : int) : ActionResult
+  }
+
+  class Cashier $x1 $x4 {
+    + Cashier()
+    + collectPayment(restaurant : Restaurant, turn : int) : Optional<Customer>
+  }
+
+  class Scoreboard $x1 $x4 {
+    - restaurant : Restaurant
+    + Scoreboard(restaurant : Restaurant)
+    + revenue() : Money
+    + paidCount() : int
+    + paidSatisfactionSum() : int
+    + averageSatisfaction() : OptionalDouble
+    + servedCount() : int
+    + unhappyDepartures() : int
+    - count(status : CustomerStatus) : int
+  }
+
+  class HappyHour $x1 $x4 {
+    + {static} DISCOUNT_PERCENT : int = 20 {readOnly}
+    + {static} RECOVERY : int = 15 {readOnly}
+    + {static} DURATION_TURNS : int = 2 {readOnly}
+    - used : boolean
+    - turnsRemaining : int
+    + isAvailable() : boolean
+    + isActive() : boolean
+!if $getters
+    + turnsRemaining() : int
+!endif
+    + activate() : ActionResult
+    + endTurn() : void
+    + adjust(price : Money) : Money
+    + status() : String
+  }
+
+  class TurnLog $x1 {
+    - lines : List<String>
+    + add(line : String) : void
+    + drain() : List<String>
+  }
+
+  class Table $x1 $x2 {
+    - number : int
+    - occupant : Customer [0..1]
+    + Table(number : int)
+!if $getters
+    + number() : int
+!endif
+    + isFree() : boolean
+!if $getters
+    + occupant() : Customer
+!endif
+    ~ assign(customer : Customer) : void
+    ~ release() : void
+  }
+
+  class ActionResult <<record>> $x1 $x2 $x4 {
+    - success : boolean
+    - message : String
+    + ActionResult(success : boolean, message : String)
+    + {static} ok(message : String) : ActionResult
+    + {static} fail(reason : String) : ActionResult
+  }
+
+  abstract class Customer $x1 $x2 {
+    + {static} MAX_SATISFACTION : int = 100 {readOnly}
+    - arrivalNo : int
+    - arrivalTurn : int
+    - satisfaction : int = 100
+    - status : CustomerStatus = WAITING
+    - table : Table [0..1]
+    - order : Order [0..1]
+    - servedTurn : int
+    - readyToPayTurn : int
+    - paidSatisfaction : int
+    # Customer(arrivalNo : int, arrivalTurn : int)
+    + {abstract} lossPerTurn() : int
+    + {abstract} typeName() : String
+    + priceFor(item : MenuItem) : Money
+    + chooseItem(menu : Menu) : MenuItem
+    + onServed(order : Order, turn : int, log : TurnLog) : void
+    + id() : String
+!if $getters
+    + arrivalNo() : int
+    + arrivalTurn() : int
+    + satisfaction() : int
+    + status() : CustomerStatus
+    + table() : Table
+    + order() : Order
+    + servedTurn() : int
+    + readyToPayTurn() : int
+    + paidSatisfaction() : int
+!endif
+    + isAwaitingService() : boolean
+    ~ decay() : boolean
+    # reduceSatisfaction(points : int) : void {leaf}
+    ~ recover(points : int) : void
+    ~ seatAt(table : Table) : void
+    ~ attachOrder(order : Order) : void
+    ~ markServed(turn : int) : void
+    ~ markReadyToPay(turn : int) : void
+    ~ markPaid() : void
+    ~ leave() : void
+    - releaseTable() : void
+    - requireStatus(expected : CustomerStatus) : void
+    + toString() : String
+  }
+
+  class RegularCustomer $x1 $x3 {
+    + {static} LOSS_PER_TURN : int = 8 {readOnly}
+    + RegularCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+  }
+
+  class VIPCustomer $x1 $x3 {
+    + {static} LOSS_PER_TURN : int = 5 {readOnly}
+    + {static} DISCOUNT_PERCENT : int = 10 {readOnly}
+    + VIPCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+    + priceFor(item : MenuItem) : Money
+  }
+
+  class CriticCustomer $x1 $x3 {
+    + {static} LOSS_PER_TURN : int = 12 {readOnly}
+    + {static} COLD_FOOD_PENALTY : int = 20 {readOnly}
+    + CriticCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+    + onServed(order : Order, turn : int, log : TurnLog) : void
+  }
+
+  enum CustomerStatus <<enumeration>> $x1 $x2 $x3 {
+    WAITING
+    SEATED
+    ORDERED
+    SERVED
+    READY_TO_PAY
+    PAID
+    LEFT
+  }
+
+  class Order $x1 $x2 {
+    - customer : Customer
+    - item : MenuItem
+    - price : Money
+    - placedTurn : int
+    - unitsDone : int
+    - status : OrderStatus = PLACED
+    - readyTurn : int
+    - servedTurn : int
+    ~ Order(customer : Customer, item : MenuItem, price : Money, placedTurn : int)
+!if $getters
+    + customer() : Customer
+    + item() : MenuItem
+    + price() : Money
+    + placedTurn() : int
+    + unitsDone() : int
+    + status() : OrderStatus
+    + readyTurn() : int
+    + servedTurn() : int
+!endif
+    + progress() : String
+    + describe() : String
+    + canCook() : ActionResult
+    + canServe(turn : int) : ActionResult
+    ~ cook(turn : int) : void
+    ~ markServed(turn : int) : void
+    ~ markPaid() : void
+    ~ cancel() : void
+  }
+
+  enum OrderStatus <<enumeration>> $x1 $x2 $x3 {
+    PLACED
+    READY
+    SERVED
+    PAID
+    CANCELLED
+  }
+
+  class Menu $x1 $x2 {
+    - items : List<MenuItem>
+    + Menu(items : List<MenuItem>)
+!if $getters
+    + items() : List<MenuItem>
+!endif
+    + itemFor(arrivalNo : int) : MenuItem
+  }
+
+  abstract class MenuItem $x1 $x2 $x3 {
+    - name : String
+    # MenuItem(name : String)
+!if $getters
+    + name() : String
+!endif
+    + {abstract} price() : Money
+    + {abstract} prepUnits() : int
+    + toString() : String
+  }
+
+  class Dish $x1 $x2 $x3 {
+    - price : Money
+    - prepUnits : int
+    + Dish(name : String, price : Money, prepUnits : int)
+    + price() : Money
+    + prepUnits() : int
+  }
+
+  class ComboMeal $x1 $x2 $x3 {
+    + {static} DISCOUNT_PERCENT : int = 10 {readOnly}
+    - first : MenuItem
+    - second : MenuItem
+    + ComboMeal(first : MenuItem, second : MenuItem)
+!if $getters
+    + first() : MenuItem
+    + second() : MenuItem
+!endif
+    + price() : Money
+    + prepUnits() : int
+  }
+
+  class Money <<record>> $x1 $x2 $x3 {
+    - cents : long
+    + {static} ZERO : Money {readOnly}
+    + Money(cents : long) {cents >= 0}
+    + {static} ofDollars(dollars : long) : Money
+    + plus(other : Money) : Money
+    + percentOff(percent : int) : Money
+    + compareTo(other : Money) : int
+    + toString() : String
+  }
+}
+
+class "java.lang.RuntimeException" as RuntimeException $x2 $x3 $x4
+interface "java.lang.Comparable<T>" as Comparable <<interface>> $x1 $x2 $x3
+
+' ---------- links owned by boundary classes ----------
+!if $links_boundary
+Main ..> GameSetup : <<use>>
+Main ..> GameCLI : <<create>>
+InputEndedException --|> RuntimeException
+GameCLI *-- $m("1") StatusView : view
+!endif
+!if $links_boundary || $links_control
+GameCLI ..|> GameUI
+!endif
+
+' ---------- links owned by control classes ----------
+!if $links_control
+GameSetup ..> GameController : <<create>>
+GameController -- $m("1") GameUI : ui
+GameController -- $m("1") GameConfig : config
+GameController -- $m("1") ArrivalSchedule : schedule
+GameController -- $m("1") Restaurant : restaurant
+GameController *-- $ml("1") Scoreboard : scoreboard
+GameController -- $m("1") Host : host
+GameController -- $m("1") Waiter : waiter
+GameController -- $m("1") Chef : chef
+GameController -- $m("1") Cashier : cashier
+GameController ..> WaiterTask : <<use>>
+GameController ..> Seating : <<use>>
+WaiterTask +-- Kind
+GameConfig ..> Scoreboard : <<use>>
+!endif
+
+' ---------- links owned by the restaurant, staff and scoring classes ----------
+!if $links_restaurant
+Restaurant o-- $m("1") Menu : menu
+Restaurant *-- $m("1..*") Table : tables {ordered}
+Restaurant o-- $m("0..*", "    ") Customer : customers {ordered}
+Restaurant o-- $m("0..*", "    ") Customer : waitingQueue\n{ordered, subsets customers}
+Restaurant *-- $m("0..*", "    ") Order : orders {ordered}
+Restaurant -- $m("1") HappyHour : happyHour
+Restaurant -- $m("1") TurnLog : log
+Scoreboard -- $m("1") Restaurant : restaurant
+Staff <|-- Host
+Staff <|-- Waiter
+Staff <|-- Chef
+Staff <|-- Cashier
+!endif
+!if $links_restaurant || $links_orders
+Table $m("0..1", "    ") -- $m("0..1", "    ") Customer : Customer sits at Table
+!endif
+
+' ---------- links owned by the customer, order and menu classes ----------
+!if $links_orders
+Customer <|-- RegularCustomer
+Customer <|-- VIPCustomer
+Customer <|-- CriticCustomer
+Customer -- $m("1") CustomerStatus : status
+Order $m("0..1", "    ") -- $m("1", "    ") Customer : Customer places Order
+Order -- $m("1") OrderStatus : status
+Order -- $m("1") MenuItem : item
+Menu o-- $m("1..*") MenuItem : items {ordered}
+MenuItem <|-- Dish
+MenuItem <|-- ComboMeal
+ComboMeal o-- $m("1") MenuItem : first
+ComboMeal o-- $m("1") MenuItem : second
+Money ..|> Comparable : <<bind>> T -> Money
+!endif

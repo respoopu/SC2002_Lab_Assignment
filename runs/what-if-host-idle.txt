@@ -1,0 +1,79 @@
+# Restaurant Rush - what-if run: the Host waits on turn 13
+# Same moves as victory.txt up to turn 12. On turn 13 the Host waits and the Waiter seats C5 instead,
+# so nobody can take C5's 3-unit Salad + Pasta order until turn 14. It is served on turn 17 and
+# C5 is only READY_TO_PAY on turn 18, too late to pay.
+# Expected: VICTORY - 4 paid, $62.10, average satisfaction 92.8 (victory.txt: 5 paid, $86.40).
+# With exactly 4 paid customers, one more lost payment would mean defeat.
+# Turn 1: Host seats C1 at table 1; Waiter takes C1's order (Salad); Chef cooks it
+0
+1
+1
+2
+1
+1
+# Turn 2: serve C1's Salad
+0
+3
+1
+# Turn 3: everyone else waits automatically
+0
+# Turn 4: Host seats C2 (VIP) at table 2; Waiter takes C2's order (Burger, $13.50); Chef cooks it
+0
+2
+2
+2
+2
+1
+# Turn 5: serve C2's Burger
+0
+3
+1
+# Turn 6: nothing to do
+0
+# Turn 7: Host seats C3 (Critic) at table 1; Waiter takes C3's order (Pasta); Chef cooks unit 1
+0
+2
+1
+2
+2
+1
+# Turn 8: activate Happy Hour so the Critic recovers while the Pasta finishes; Chef cooks unit 2
+1
+1
+# Turn 9: Happy Hour still on; serve the Critic's Pasta fresh
+3
+1
+# Turn 10: Host seats C4 at table 2; Waiter takes C4's order (Salad + Burger); Chef cooks unit 1
+2
+2
+2
+2
+1
+# Turn 11: Chef cooks unit 2
+1
+# Turn 12: serve C4's combo
+3
+1
+# Turn 13: (what-if) the Host waits; the Waiter seats C5 at table 1, using up the Waiter's task
+0
+1
+2
+1
+# Turn 14: take C5's order (Salad + Pasta, 3 units); Chef cooks unit 1
+2
+2
+1
+# Turn 15: Chef cooks unit 2
+1
+# Turn 16: Host seats C6 at table 2; Waiter takes C6's order (Burger + Pasta); Chef cooks C5's unit 3 - READY
+2
+2
+2
+2
+1
+# Turn 17: serve C5's combo; Chef cooks C6's unit 1
+3
+1
+1
+# Turn 18: Chef cooks C6's unit 2 - neither C5 nor C6 can pay in time
+1

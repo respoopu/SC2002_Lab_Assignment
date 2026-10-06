@@ -1,0 +1,22 @@
+@startuml class-detail-3-restaurant-staff
+' Class diagram detail page 3 of 4: restaurant, staff and scoring. Classes from other pages appear as collapsed boxes.
+' The model is in class-model.iuml; render with render.sh.
+!$getters = %false()
+!$links_boundary = %false()
+!$links_control = %false()
+!$links_restaurant = %true()
+!$links_orders = %false()
+!include class-model.iuml
+!include class-dependencies.iuml
+!include class-notes-restaurant.iuml
+!include class-legend.iuml
+remove $x3
+hide Customer members
+hide Order members
+hide Menu members
+' layout hints found by checking the rendered SVGs (no meaning)
+Restaurant -[hidden]left- Menu
+Restaurant -[hidden]right- HappyHour
+Customer -[hidden]right- Order
+title Restaurant Rush - class diagram, detail 3 of 4: restaurant, staff and scoring (tag stage-3)\nBoxes without compartments are detailed on another page.
+@enduml

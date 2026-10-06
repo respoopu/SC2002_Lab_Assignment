@@ -1,0 +1,19 @@
+' Notes for the boundary and control classes (class-model.iuml).
+package control {
+  note top of GameUI
+    <b>Dependency inversion</b>
+    GameController depends on the GameUI interface,
+    which is declared in the control package. GameCLI
+    implements it for the console, and the test double
+    ScriptedUI implements it in the tests, so whole games
+    run in JUnit and no game rule lives in the console code.
+  end note
+
+  note right of GameSetup
+    Builds the base game: the Menu (3 Dishes, 3 ComboMeals),
+    a Restaurant with a new TurnLog and HappyHour, the four
+    staff, GameConfig.base() and ArrivalSchedule.base(),
+    then the GameController. GameController owns its
+    Scoreboard (composition), as GameCLI owns its StatusView.
+  end note
+}

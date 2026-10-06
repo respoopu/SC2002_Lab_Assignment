@@ -1,0 +1,77 @@
+# Restaurant Rush - what-if run: the Critic is served one turn late
+# Same moves as victory.txt up to turn 8. On turn 9 the Waiter waits instead of serving C3's Pasta.
+# C3 waits one more turn (-12) and gets cold food on turn 10 (-20), paying with 68 instead of 100.
+# The Waiter's lost turn also pushes C4 back: C4 pays with 68 instead of 84.
+# Expected: VICTORY - 5 paid, $86.40, average satisfaction 79.8 (victory.txt: 89.4)
+# Turn 1: Host seats C1 at table 1; Waiter takes C1's order (Salad); Chef cooks it
+0
+1
+1
+2
+1
+1
+# Turn 2: serve C1's Salad
+0
+3
+1
+# Turn 3: everyone else waits automatically
+0
+# Turn 4: Host seats C2 (VIP) at table 2; Waiter takes C2's order (Burger, $13.50); Chef cooks it
+0
+2
+2
+2
+2
+1
+# Turn 5: serve C2's Burger
+0
+3
+1
+# Turn 6: nothing to do
+0
+# Turn 7: Host seats C3 (Critic) at table 1; Waiter takes C3's order (Pasta); Chef cooks unit 1
+0
+2
+1
+2
+2
+1
+# Turn 8: activate Happy Hour; Chef cooks unit 2 of C3's Pasta - READY
+1
+1
+# Turn 9: (what-if) the Waiter waits instead of serving C3's Pasta
+0
+# Turn 10: Host seats C4 at table 2; Waiter serves C3's Pasta - now cold
+2
+2
+3
+1
+# Turn 11: Waiter takes C4's order (Salad + Burger); Chef cooks unit 1
+2
+2
+1
+# Turn 12: Chef cooks unit 2 - READY
+1
+# Turn 13: Host seats C5 at table 1. The Waiter can serve C4 or take C5's 3-unit order, not both: take C5's order; Chef cooks C5's unit 1
+2
+1
+2
+2
+2
+# Turn 14: serve C4's combo, one turn later than it could have been; Chef cooks C5's unit 2
+3
+1
+1
+# Turn 15: Chef cooks C5's unit 3 - READY
+1
+# Turn 16: both tables are taken, so C6 waits; serve C5's combo
+3
+1
+# Turn 17: Host seats C6 at table 2; Waiter takes C6's order (Burger + Pasta); Chef cooks unit 1
+2
+2
+2
+2
+1
+# Turn 18: Chef cooks unit 2 - C6 cannot pay in time
+1
