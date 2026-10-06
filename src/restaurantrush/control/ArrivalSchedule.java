@@ -3,8 +3,10 @@ package restaurantrush.control;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
+import restaurantrush.entity.CriticCustomer;
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.RegularCustomer;
+import restaurantrush.entity.VIPCustomer;
 
 /** Which kind of customer arrives on which turn. At most one arrival per turn. */
 public class ArrivalSchedule {
@@ -32,12 +34,15 @@ public class ArrivalSchedule {
         return Optional.of(factory.apply(arrivalNo, turn));
     }
 
-    /** Base setting: one customer at the start of turns 1, 4, 7, 10, 13 and 16. */
+    /**
+     * Base setting: one customer at the start of turns 1, 4, 7, 10, 13 and 16.
+     * Arrival #2 is a VIP and #3 a Critic; the rest are Regular.
+     */
     public static ArrivalSchedule base() {
         return new ArrivalSchedule()
                 .add(1, RegularCustomer::new)
-                .add(4, RegularCustomer::new)
-                .add(7, RegularCustomer::new)
+                .add(4, VIPCustomer::new)
+                .add(7, CriticCustomer::new)
                 .add(10, RegularCustomer::new)
                 .add(13, RegularCustomer::new)
                 .add(16, RegularCustomer::new);

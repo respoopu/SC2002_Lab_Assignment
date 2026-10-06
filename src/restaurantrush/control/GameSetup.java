@@ -12,7 +12,7 @@ import restaurantrush.entity.Waiter;
 
 /** Builds the base-setting game. Used by Main and by the scripted-run tests. */
 public final class GameSetup {
-    public static final String EDITION = "Stage 1: basic restaurant operation";
+    public static final String EDITION = "Stage 2: VIP and Critic customers";
 
     private GameSetup() {
     }

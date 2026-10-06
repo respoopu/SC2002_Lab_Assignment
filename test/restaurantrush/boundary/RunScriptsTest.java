@@ -34,8 +34,9 @@ class RunScriptsTest {
         String out = play("victory.txt");
         assertContains(out, "GAME OVER: VICTORY");
         assertContains(out, "Paid customers: 5 (target 4) [met]");
-        assertContains(out, "Revenue: $66.00 (target $45.00) [met]");
-        assertContains(out, "Average satisfaction: 79.2 (target 60) [met]");
+        assertContains(out, "Revenue: $64.50 (target $45.00) [met]");
+        assertContains(out, "Average satisfaction: 78.0 (target 60) [met]");
+        assertContains(out, "C3 (Critic): served fresh - no complaints.");
         assertContains(out, "Served: 5 | Unhappy departures: 0 | Turns used: 18/18");
         assertFalse(out.contains("Not allowed"), "the victory script should only make legal moves");
         assertFalse(out.contains("Input ended"), "the victory script is too short");

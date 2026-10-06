@@ -41,8 +41,8 @@ java -cp out/main restaurantrush.boundary.Main
 
 | Script | Strategy | Expected result |
 |---|---|---|
-| `victory.txt` | Seat, order and serve each customer as early as possible; serve READY dishes before seating new arrivals | VICTORY: 5 paid, $66.00, average satisfaction 79.2 |
-| `defeat.txt` | Shows invalid input being rejected, then leaves the Waiter idle all game | DEFEAT: 0 paid, $0.00, average N/A, 2 unhappy departures |
+| `victory.txt` | Seat, order and serve each customer as early as possible; serve READY dishes before seating new arrivals | VICTORY: 5 paid, $64.50, average satisfaction 78.0 |
+| `defeat.txt` | Shows invalid input being rejected, then leaves the Waiter idle all game | DEFEAT: 0 paid, $0.00, average N/A, 2 unhappy departures (C1 and the Critic) |
 
 ## How to play
 
@@ -56,7 +56,13 @@ If a choice breaks a rule (an occupied table, a dish that is still cooking), the
 
 ## Rules as implemented
 
-Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer arriving at the start of turns 1, 4, 7, 10, 13 and 16.
+Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer arriving at the start of turns 1, 4, 7, 10, 13 and 16. Arrival #2 (turn 4) is a VIP and arrival #3 (turn 7) is a Critic; the others are Regular.
+
+| Customer | Satisfaction lost per waiting turn | Bill | Special behaviour |
+|---|---|---|---|
+| Regular | 8 | Full price | — |
+| VIP | 5 | 10% off | — |
+| Critic | 12 | Full price | Cold-food penalty: if the dish is served more than one turn after it became READY, the Critic loses 20 satisfaction |
 
 | Menu item | Price | Preparation units |
 |---|---|---|
@@ -76,6 +82,8 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 4. "Served" in the summaries counts customers who have been served their dish, including those who later paid.
 5. The Cashier's "oldest first" means the customer who became READY_TO_PAY earliest; ties go to the lower arrival number.
 6. Money is stored as integer cents and shown as dollars with two decimals.
+7. A served customer never leaves. A Critic whose satisfaction drops to 0 because of cold food still eats and pays; abandonment applies only to customers who have not been served.
+8. Discounts are rounded half-up to the cent.
 
 ## Project structure
 
@@ -90,6 +98,26 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 | Tag | Adds |
 |---|---|
 | `stage-1` | Regular customers, menu, Waiter, Chef, Cashier, the full turn sequence, victory and defeat |
+| `stage-2` | VIP and Critic customers |
+
+## Changes between stages
+
+### Stage 1 → Stage 2 ([compare](https://github.com/respoopu/SC2002_Lab_Assignment/compare/stage-1...stage-2))
+
+New files:
+- `entity/VIPCustomer.java`: overrides `lossPerTurn()` (5) and `priceFor()` (10% off).
+- `entity/CriticCustomer.java`: overrides `lossPerTurn()` (12) and `onServed()` (cold-food penalty).
+- Tests: `VIPCustomerTest`, `CriticCustomerTest`.
+
+Changed files:
+- `entity/Customer.java`: added the `onServed(order, turn, log)` hook, which does nothing by default. The Critic needs to react to service; Regular and VIP keep the default.
+- `entity/Restaurant.java`: `serve()` calls `customer.onServed(...)` after marking the dish SERVED (two lines).
+- `control/ArrivalSchedule.java`: registration only. Arrival #2 is a VIP and #3 a Critic.
+- `control/GameSetup.java`: edition label.
+- Tests: `ArrivalScheduleTest` expects the new arrival types; `RunScriptsTest` expects the Stage 2 results; new tests in `RestaurantTest` and `GameControllerTest`.
+- `runs/*.txt`: comments only. The inputs are identical because every customer type follows the same service flow.
+
+Unchanged: `GameController`, `Waiter`, `Chef`, `Cashier`, `Order`, `GameCLI`, `StatusView`. Different behaviour is dispatched through the customer objects (`lossPerTurn()`, `priceFor()`, `onServed()`), so the controller has no type checks.
 
 ## Video timestamps
 
