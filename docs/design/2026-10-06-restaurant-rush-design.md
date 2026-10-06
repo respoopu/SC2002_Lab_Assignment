@@ -45,7 +45,7 @@ src/restaurantrush/control/    turn engine, config, arrival schedule
 src/restaurantrush/entity/     domain objects that own the rules
 test/restaurantrush/...        JUnit tests mirroring src packages
 lib/                           JUnit console-standalone jar
-runs/                          scripted inputs: stageN-victory.txt, stageN-defeat.txt
+runs/                          scripted inputs: victory.txt, defeat.txt (updated each stage)
 docs/design/                   this spec
 docs/diagrams/                 class and sequence diagram sources/exports
 build.sh  run.sh  test.sh  README.md  .gitignore
@@ -57,7 +57,7 @@ build.sh  run.sh  test.sh  README.md  .gitignore
 
 | Class | Responsibility |
 |---|---|
-| `Main` | Composes the object graph (menu, restaurant, staff, schedule, config, UI, controller) and starts the game. |
+| `Main` | Starts the game built by `GameSetup`; `--echo` prints scripted answers so replayed runs read like live play. |
 | `GameCLI` | Implements `GameUI`. Reads numbered choices from a `Scanner`, rejects non-numeric / out-of-range input and re-prompts. Never decides whether a game action is legal. |
 | `StatusView` | Formats the start-of-turn state, turn log, and end-of-turn results. Dollars shown as `$x.xx`, average satisfaction to one decimal or `N/A`. |
 
@@ -66,10 +66,11 @@ build.sh  run.sh  test.sh  README.md  .gitignore
 | Class | Responsibility |
 |---|---|
 | `GameController` | Owns the turn loop and the step order (Section 6). Asks `GameUI` for decisions, sends them to staff, and on rejection reports the reason and asks again without consuming the task. |
-| `GameUI` (interface) | The manager as seen by the controller: render state, show messages, decide Waiter task, decide Chef task. Implemented by `GameCLI` and by a scripted test double. Keeps step order out of the UI and lets whole games run in JUnit. |
+| `GameUI` (interface) | The manager as seen by the controller: `showState`, `showMessage`, `chooseWaiterTask`, `chooseOrderToCook` (Stage 3 adds `askActivateHappyHour`, `chooseHostSeating`). Implemented by `GameCLI` and by a scripted test double. Keeps step order out of the UI and lets whole games run in JUnit. |
 | `WaiterTask` | The Waiter decision: seat(customer, table), takeOrder(customer), serve(order), or wait. |
 | `ArrivalSchedule` | Maps turn → customer factory. Base: turns 1, 4, 7, 10, 13, 16. Assigns arrival numbers #1–#6. |
-| `GameConfig` | Base setting: 18 turns, 2 tables, targets (≥4 paid, ≥$45.00, average ≥60). `GameConfig.base()`. |
+| `GameConfig` | Base setting: 18 turns, 2 tables, targets (≥4 paid, ≥$45.00, average ≥60). `GameConfig.base()`. Owns the victory check, using integer comparison `sum ≥ 60 × paidCount`. |
+| `GameSetup` | Composes the base-setting game (menu, restaurant, staff, schedule, config) for `Main` and the scripted-run tests. Later stages register new customer types, combos and staff here. |
 
 ### 5.3 Entity
 
@@ -91,7 +92,7 @@ build.sh  run.sh  test.sh  README.md  .gitignore
 | `Cashier` | `collectPayment(...)`: automatic, at most one customer per turn. |
 | `ActionResult` | Success message, or failure with a human-readable reason. |
 | `Money` | Value object over integer cents. `plus`, `percentOff(pct)` with half-up rounding to the cent, `toString()` → `$x.xx`. |
-| `Scoreboard` | Revenue, paid count, sum of satisfaction recorded at payment, served count, unhappy departures. `average()`, `meetsTargets(config)` using integer comparison `sum ≥ 60 × paidCount`. |
+| `Scoreboard` | Revenue, paid count, sum of satisfaction recorded at payment, served count, unhappy departures, all derived from the `Restaurant`'s state so they cannot drift out of sync. |
 | `TurnLog` | Event lines written by control/entity objects during a turn (orders placed, payments, departures, reactions); drained and printed by `StatusView`. |
 
 Stage 1 deliberately has no `onServed` hook and no pricing policy; those
@@ -145,7 +146,7 @@ New files:
 Changed files (each explained in the README):
 - `Customer`: add `onServed(order, t, log)` hook, no-op by default — the
   Critic needs a service reaction.
-- `Waiter.serve()`: call `customer.onServed(...)` after marking served.
+- `Restaurant.serve()`: call `customer.onServed(...)` after marking served.
 - `ArrivalSchedule`: registration change — arrival #2 (turn 4) is a VIP,
   arrival #3 (turn 7) is a Critic. Still six arrivals.
 
@@ -193,12 +194,13 @@ same turn.
 
 Changed files (each explained in the README):
 - `GameController`: Host step, Happy Hour prompt / recovery / countdown.
-- `GameUI`, `GameCLI`: `decideHost`, `decideHappyHour`; prompts.
+- `GameUI`, `GameCLI`: `chooseHostSeating`, `askActivateHappyHour`; prompts.
 - `StatusView`: Happy Hour status line.
 - `Restaurant`: receives the `HappyHour`; `placeOrder` wraps the price
-  with `happyHour.adjust(...)`.
+  with `happyHour.adjust(...)`. The original constructor is kept (a
+  restaurant whose Happy Hour is never used) so earlier tests are unchanged.
 - `Customer`: `recover(amount)` capped at 100.
-- `Main`: register combos on the menu, construct `Host` and `HappyHour`.
+- `GameSetup`: register combos on the menu, construct `Host` and `HappyHour`.
 
 Alternative considered (for the report): a list of "staff decision phases"
 iterated by the controller, so the Host would be registered without editing
@@ -229,9 +231,10 @@ the controller. Rejected as an extra abstraction for a single addition.
   including the brief's Pasta example (Section 6).
 - Each stage adds tests; earlier-stage tests must keep passing unchanged
   unless a README-documented rule change requires otherwise.
-- `runs/stageN-victory.txt` and `runs/stageN-defeat.txt` replay with
-  `./run.sh < runs/stage1-victory.txt`. Each has its expected final result
-  noted in the README.
+- `runs/victory.txt` and `runs/defeat.txt` replay with
+  `./run.sh --echo < runs/victory.txt`; lines starting with `#` are notes.
+  The files are updated each stage, so every tag replays its own runs, and
+  the expected results are noted in the README.
 
 Expected best-play results (base setting):
 
