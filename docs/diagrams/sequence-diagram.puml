@@ -1,0 +1,305 @@
+@startuml sequence-diagram
+' Restaurant Rush - sequence diagram. Follows runs/victory.txt at tag stage-3, turns 7-11 and the result check.
+' Render: java -jar plantuml.jar -tsvg docs/diagrams/sequence-diagram.puml (see docs/diagrams/README.md)
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 11
+skinparam maxMessageSize 230
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  LifeLineBorderColor #777777
+  ParticipantBorderColor #444444
+  ParticipantBackgroundColor #FFFFFF
+  GroupBorderColor #555555
+  GroupHeaderFontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #B8A060
+}
+
+title Restaurant Rush - sequence diagram (1/4): the Critic's visit in the Stage 3 victory run - turn 7 arrival and seating
+
+actor Manager
+box "boundary" #F3F7FF
+  participant ":GameCLI" as cli
+end box
+box "control" #F4FBF4
+  participant ":GameController" as ctrl
+  participant ":ArrivalSchedule" as sched
+  participant ":GameConfig" as config
+end box
+box "entity: staff" #FFF7F0
+  participant ":Host" as host
+  participant ":Waiter" as waiter
+  participant ":Chef" as chef
+  participant ":Cashier" as cashier
+end box
+box "entity: domain" #FFF7F0
+  participant ":Restaurant" as rest
+  participant ":HappyHour" as hh
+  participant "c3:CriticCustomer" as c3
+  participant "o3:Order" as o3
+  participant ":Scoreboard" as score
+end box
+
+note over Manager, ctrl
+  <b>Scenario</b> (replay: ./run.sh --echo < runs/victory.txt at tag stage-3)
+  C3 is a Critic: arrival #3 on turn 7, loses 12 satisfaction per waiting turn,
+  and reacts to how fresh the food is when it is served.
+  <b>Manager choices that change the outcome</b>
+  (1) Turn 8: switch on Happy Hour, so C3 recovers 15 at the start of turns 8 and 9.
+       C3 pays with satisfaction 100 instead of 76 (average 89.4 instead of 84.6).
+  (2) Turn 9: serve C3 on the first turn the dish can be served, so it is fresh.
+       Serving it on turn 10 instead costs one more waiting turn (-12) and the
+       cold-food penalty (-20): C3 pays with 68, and the average falls to 79.8.
+end note
+
+[-> ctrl : run()
+activate ctrl
+note right of ctrl : called by Main.play(). Only turns 7-11 (C3's visit)\nare drawn; every other turn runs the same steps\nfor the other customers.
+
+loop for t = 1 to config.maxTurns() (18): playTurn(t)
+
+  group t = 7: C3 arrives, the Host seats C3, the Waiter takes the order, the Chef starts cooking
+    ctrl -> host : startTurn()
+    ctrl -> waiter : startTurn()
+    ctrl -> chef : startTurn()
+    ctrl -> cashier : startTurn()
+    note right of cashier : every turn starts by giving\neach staff member one task
+    ctrl -> cli : showTurnHeader(7, 18)
+
+    == Step 1: arrival ==
+    ctrl -> sched : arrivalAt(7)
+    create c3
+    sched -> c3 : <<create>> CriticCustomer(3, 7)
+    sched --> ctrl : Optional[c3]
+    ctrl -> rest : admit(c3)
+    note right of rest : C3 joins the waiting queue\nwith satisfaction 100
+    ctrl -> cli : showState(restaurant, scoreboard, availableTasks())
+    cli -> Manager : turn 7 state: queue, tables,\nsatisfaction, orders, staff tasks
+
+    ctrl -> hh : isAvailable()
+    hh --> ctrl : true
+    ctrl -> cli : askActivateHappyHour(happyHour)
+    Manager -> cli : 0 (not yet)
+    cli --> ctrl : false
+
+    == Step 2-3: Host, then Waiter, then Chef ==
+    ctrl -> rest : canSeatSomeone()
+    rest --> ctrl : true
+    loop until result.success() - a rejected choice is reported and asked again; the task is not used up
+      ctrl -> cli : chooseHostSeating(restaurant)
+      Manager -> cli : 2 (C3)
+      cli -> rest : canSeat(c3)
+      rest --> cli : ok (C3 is WAITING)
+      Manager -> cli : 1 (Table 1)
+      cli --> ctrl : Optional[Seating(c3, table 1)]
+      ctrl -> host : seat(restaurant, c3, table 1)
+      host -> host : perform(action)
+      alt host has already acted this turn
+        host --> ctrl : fail("Host has already completed a task this turn")
+      else host is free
+        host -> rest : seat(c3, table 1)
+        alt C3 not WAITING or table 1 occupied
+          rest --> host : fail(reason)
+        else valid
+          rest -> c3 : seatAt(table 1)
+          note right of c3 : table1.assign(c3)\nstatus SEATED
+          rest --> host : ok("C3 is seated at table 1.")
+        end
+        host --> ctrl : result (task used up only on success)
+      end
+      ctrl -> cli : showMessage(message, or "Not allowed: reason. Choose again.")
+    end
+
+    newpage Restaurant Rush - sequence diagram (2/4): turn 7 continued - order, cooking, end of turn
+    ctrl -> ctrl : waiterHasWork()
+    loop until result.success()
+      ctrl -> cli : chooseWaiterTask(restaurant)
+      Manager -> cli : 2 (Take an order), 2 (C3)
+      cli --> ctrl : WaiterTask.takeOrder(c3)
+      ctrl -> waiter : takeOrder(restaurant, c3, 7)
+      waiter -> rest : placeOrder(c3, 7)
+      note left of rest : inside perform(),\nas for the Host
+      alt C3 not SEATED
+        rest --> waiter : fail("C3 has not been seated yet" / "C3 has already ordered")
+      else C3 SEATED
+        rest -> c3 : chooseItem(menu)
+        c3 --> rest : Pasta
+        note right of c3 : the customer chooses, not the manager:\nmenu.itemFor(arrivalNo 3) = Pasta (rotation)
+        rest -> c3 : priceFor(Pasta)
+        c3 --> rest : $18.00
+        note right of c3 : a Critic pays full price;\nVIPCustomer.priceFor() gives 10% off
+        rest -> hh : adjust($18.00)
+        hh --> rest : $18.00 (Happy Hour not active)
+        create o3
+        rest -> o3 : <<create>> Order(c3, Pasta, $18.00, 7)
+        note right of o3 : bill locked when the order\nis taken; PLACED, 0/2 units
+        rest -> c3 : attachOrder(o3)
+        rest --> waiter : ok("C3 orders Pasta - bill $18.00.")
+      end
+      waiter --> ctrl : result
+      ctrl -> cli : showMessage(...)
+    end
+
+    ctrl -> rest : cookableOrders()
+    rest --> ctrl : [o3]
+    loop until result.success()
+      ctrl -> cli : chooseOrderToCook(restaurant)
+      Manager -> cli : 1 (C3's Pasta)
+      cli --> ctrl : Optional[o3]
+      ctrl -> chef : cook(o3, 7)
+      chef -> o3 : canCook()
+      o3 --> chef : ok (PLACED)
+      chef -> o3 : cook(7)
+      note right of o3 : unit 1 of 2 done
+      chef --> ctrl : ok("Chef cooks C3's Pasta (1/2).")
+    end
+
+    == Step 4-5: payment, eating, waiting ==
+    ctrl -> cashier : collectPayment(restaurant, 7)
+    note right of cashier : C2 pays this turn\n(not followed here)
+    ctrl -> rest : finishEating(7)
+    ctrl -> rest : applyWaitingDecay()
+    loop for each customer
+      opt customer.isAwaitingService() (C3 is ORDERED, not served)
+        rest -> c3 : decay()
+        c3 -> c3 : reduceSatisfaction(lossPerTurn())
+        note right of c3 : polymorphic: a Critic loses 12\n(Regular 8, VIP 5): 100 -> 88
+        c3 --> rest : false (satisfaction above 0)
+        opt decay() returned true: satisfaction 0
+          rest -> c3 : leave()
+          note right of c3 : cancels the order, frees the\ntable (does not happen here)
+        end
+      end
+    end
+    ctrl -> hh : endTurn()
+    ctrl -> cli : showTurnEnd(7, 18, scoreboard)
+  end
+
+  newpage Restaurant Rush - sequence diagram (3/4): turns 8 and 9 - Happy Hour, READY, then SERVED
+  group t = 8: Manager choice 1 - Happy Hour; the Pasta becomes READY
+    ctrl -> hh : isAvailable()
+    hh --> ctrl : true
+    ctrl -> cli : askActivateHappyHour(happyHour)
+    Manager -> cli : 1 (activate now)
+    cli --> ctrl : true
+    ctrl -> hh : activate()
+    hh --> ctrl : ok (used, 2 turns remaining)
+    opt happyHour.isActive()
+      ctrl -> rest : recoverAwaitingCustomers(HappyHour.RECOVERY = 15)
+      rest -> c3 : recover(15)
+      note right of c3 : 88 -> 100 (capped at 100)
+    end
+    ctrl -> rest : canSeatSomeone()
+    rest --> ctrl : false
+    ctrl -> cli : showMessage("Host has no one to seat and waits.")
+    ctrl -> ctrl : waiterHasWork()
+    note right of ctrl : false: the Waiter acts before the Chef,\nso the Pasta is not READY yet
+    ctrl -> cli : showMessage("Waiter has nothing to do this turn and waits.")
+    ctrl -> chef : cook(o3, 8)
+    note left of chef : chosen through chooseOrderToCook()\nas on turn 7
+    chef -> o3 : cook(8)
+    note right of o3 : unit 2 of 2: READY,\nreadyTurn = 8
+    chef --> ctrl : ok("Chef cooks C3's Pasta (2/2) - READY.")
+    ctrl -> rest : applyWaitingDecay()
+    rest -> c3 : decay()
+    note right of c3 : 100 -> 88
+    ctrl -> hh : endTurn()
+    note right of hh : 1 turn remaining
+  end
+
+  group t = 9: Manager choice 2 - serve the Critic now; the Critic reacts
+    ctrl -> hh : isAvailable()
+    hh --> ctrl : false (already used, so no question)
+    opt happyHour.isActive()
+      ctrl -> rest : recoverAwaitingCustomers(15)
+      rest -> c3 : recover(15)
+      note right of c3 : 88 -> 100
+    end
+    ctrl -> cli : chooseWaiterTask(restaurant)
+    Manager -> cli : 3 (Serve a READY dish), 1 (C3's Pasta)
+    cli --> ctrl : WaiterTask.serve(o3)
+    ctrl -> waiter : serve(restaurant, o3, 9)
+    waiter -> rest : serve(o3, 9)
+    rest -> o3 : canServe(9)
+    alt PLACED
+      o3 --> rest : fail("still cooking (1/2)")
+    else READY and readyTurn = turn
+      o3 --> rest : fail("only became READY this turn; serve it next turn")
+    else READY and readyTurn (8) < turn (9)
+      o3 --> rest : ok
+    end
+    rest -> c3 : markServed(9)
+    c3 -> o3 : markServed(9)
+    note right of o3 : SERVED
+    rest -> c3 : onServed(o3, 9, log)
+    note right of c3 : polymorphic hook: Restaurant only knows Customer.\nCriticCustomer overrides onServed();\nRegular and VIP inherit the empty default.
+    alt turn - o3.readyTurn() > 1: the food waited, it is cold
+      c3 -> c3 : reduceSatisfaction(COLD_FOOD_PENALTY = 20)
+    else served the turn after READY
+      c3 -> c3 : log("C3 (Critic): served fresh - no complaints.")
+    end
+    rest --> waiter : ok("C3's Pasta is SERVED.")
+    waiter --> ctrl : ok
+    ctrl -> cli : showMessage(...)
+    ctrl -> rest : applyWaitingDecay()
+    note right of rest : C3 is SERVED (eating),\nso C3 loses nothing
+    ctrl -> hh : endTurn()
+    note right of hh : Happy Hour is over
+  end
+
+  newpage Restaurant Rush - sequence diagram (4/4): turns 10 and 11 - eating and payment, then the result check
+  group t = 10: C3 finishes eating
+    note over ctrl, waiter : earlier this turn the Host seats C4, the Waiter takes\nC4's order and the Chef starts cooking it (not shown)
+    ctrl -> cashier : collectPayment(restaurant, 10)
+    cashier --> ctrl : Optional.empty() (nobody READY_TO_PAY)
+    ctrl -> rest : finishEating(10)
+    loop for each customer
+      opt status SERVED and servedTurn (9) < turn (10)
+        rest -> c3 : markReadyToPay(10)
+        note right of c3 : READY_TO_PAY,\nreadyToPayTurn = 10
+      end
+    end
+  end
+
+  group t = 11: the Cashier collects C3's payment
+    ctrl -> cashier : collectPayment(restaurant, 11)
+    cashier -> rest : customers()
+    note right of cashier : oldest first: READY_TO_PAY with\nreadyToPayTurn < 11, earliest\nreadyToPayTurn, then arrival number
+    opt someone can pay
+      cashier -> cashier : perform(action)
+      cashier -> c3 : order()
+      c3 --> cashier : o3
+      cashier -> o3 : price()
+      o3 --> cashier : $18.00
+      cashier -> c3 : markPaid()
+      c3 -> o3 : markPaid()
+      note right of o3 : PAID
+      c3 -> c3 : releaseTable()
+      note right of c3 : records paidSatisfaction = 100,\nfrees table 1, status PAID
+      cashier --> ctrl : Optional[c3]
+    end
+  end
+end
+
+== Step 6: after turn 18, the result check ==
+ctrl -> config : isVictory(scoreboard)
+config -> score : paidCount()
+score -> rest : customers()
+score --> config : 5
+config -> score : revenue()
+score -> rest : orders()
+score --> config : $86.40 (PAID orders only)
+config -> score : paidSatisfactionSum()
+score --> config : 447 (92 + 95 + 100 + 84 + 76)
+note right of config : 5 >= 4, $86.40 >= $45.00,\nand 447 >= 60 x 5 (average 89.4)
+config --> ctrl : true
+ctrl -> cli : showResult(true, scoreboard, config)
+cli -> Manager : GAME OVER: VICTORY
+deactivate ctrl
+
+@enduml

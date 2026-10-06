@@ -1,0 +1,565 @@
+@startuml class-diagram
+' Restaurant Rush - final class diagram. Matches the code at tag stage-3.
+' Render: java -jar plantuml.jar -tsvg docs/diagrams/class-diagram.puml (see docs/diagrams/README.md)
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 11
+skinparam packageStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 45
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+  ArrowColor #333333
+}
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #B8A060
+}
+hide empty members
+hide circle
+
+title Restaurant Rush - class diagram (final design, tag stage-3)
+
+package "restaurantrush.boundary  <<boundary>>" as boundary #F3F7FF {
+  class Main <<final>> {
+    - Main()
+    + {static} main(args : String[]) : void
+    ~ {static} play(in : InputStream, out : PrintStream, echo : boolean) : void
+  }
+
+  class GameCLI {
+    - in : Scanner
+    - out : PrintStream
+    - echoInput : boolean
+    - view : StatusView
+    + GameCLI(in : InputStream, out : PrintStream, echoInput : boolean)
+    + showTurnHeader(turn : int, maxTurns : int) : void
+    + showMessage(message : String) : void
+    + showState(r : Restaurant, s : Scoreboard, tasks : List<String>) : void
+    + askActivateHappyHour(h : HappyHour) : boolean
+    + chooseHostSeating(r : Restaurant) : Optional<Seating>
+    + chooseWaiterTask(r : Restaurant) : WaiterTask
+    + chooseOrderToCook(r : Restaurant) : Optional<Order>
+    + showTurnEnd(turn : int, maxTurns : int, s : Scoreboard) : void
+    + showResult(victory : boolean, s : Scoreboard, c : GameConfig) : void
+    - pickCustomerToSeat(question : String, r : Restaurant) : Optional<Customer>
+    - pick<T>(question : String, options : List<T>, label : Function<T,String>) : Optional<T>
+    - readChoice(prompt : String, min : int, max : int) : int
+    - nextAnswer() : String
+  }
+
+  class StatusView {
+    + header(turn : int, maxTurns : int) : String
+    + state(r : Restaurant, s : Scoreboard, tasks : List<String>) : String
+    + describeCustomer(c : Customer) : String
+    + describeOrder(o : Order) : String
+    + describeTable(t : Table) : String
+    + turnEnd(turn : int, maxTurns : int, s : Scoreboard) : String
+    + result(victory : boolean, s : Scoreboard, c : GameConfig) : String
+    + {static} average(s : Scoreboard) : String
+  }
+
+  class InputEndedException <<RuntimeException>> {
+    + InputEndedException()
+  }
+}
+
+package "restaurantrush.control  <<control>>" as control #F4FBF4 {
+  interface GameUI <<interface>> {
+    + showTurnHeader(turn : int, maxTurns : int) : void
+    + showMessage(message : String) : void
+    + showState(r : Restaurant, s : Scoreboard, tasks : List<String>) : void
+    + askActivateHappyHour(h : HappyHour) : boolean
+    + chooseHostSeating(r : Restaurant) : Optional<Seating>
+    + chooseWaiterTask(r : Restaurant) : WaiterTask
+    + chooseOrderToCook(r : Restaurant) : Optional<Order>
+    + showTurnEnd(turn : int, maxTurns : int, s : Scoreboard) : void
+    + showResult(victory : boolean, s : Scoreboard, c : GameConfig) : void
+  }
+
+  class GameController {
+    - config : GameConfig
+    - restaurant : Restaurant
+    - scoreboard : Scoreboard
+    - schedule : ArrivalSchedule
+    - host : Host
+    - waiter : Waiter
+    - chef : Chef
+    - cashier : Cashier
+    - ui : GameUI
+    - turn : int
+    + GameController(GameConfig, Restaurant, ArrivalSchedule,\n    Host, Waiter, Chef, Cashier, GameUI)
+    + run() : boolean
+    ~ playTurn(t : int) : void
+    + currentTurn() : int
+    + scoreboard() : Scoreboard
+    - happyHourStep() : void
+    - hostStep() : void
+    - waiterStep() : void
+    - execute(task : WaiterTask) : ActionResult
+    - chefStep() : void
+    - report(result : ActionResult) : void
+    - flushLog() : void
+    - waiterHasWork() : boolean
+    - availableTasks() : List<String>
+  }
+
+  class GameSetup <<final>> {
+    + {static} EDITION : String
+    - GameSetup()
+    + {static} baseMenu() : Menu
+    + {static} baseGame(ui : GameUI) : GameController
+  }
+
+  class GameConfig <<record>> {
+    - maxTurns : int
+    - tableCount : int
+    - targetPaidCustomers : int
+    - targetRevenue : Money
+    - targetAverageSatisfaction : int
+    + {static} base() : GameConfig
+    + paidTargetMet(paidCount : int) : boolean
+    + revenueTargetMet(revenue : Money) : boolean
+    + satisfactionTargetMet(satisfactionSum : int, paidCount : int) : boolean
+    + isVictory(s : Scoreboard) : boolean
+  }
+
+  class ArrivalSchedule {
+    - arrivals : TreeMap<Integer, BiFunction<Integer,Integer,Customer>>
+    + add(turn : int, factory : BiFunction<Integer,Integer,Customer>) : ArrivalSchedule
+    + arrivalAt(turn : int) : Optional<Customer>
+    + {static} base() : ArrivalSchedule
+  }
+
+  class WaiterTask <<record>> {
+    - kind : WaiterTask.Kind
+    - customer : Customer
+    - table : Table
+    - order : Order
+    + {static} seat(c : Customer, t : Table) : WaiterTask
+    + {static} takeOrder(c : Customer) : WaiterTask
+    + {static} serve(o : Order) : WaiterTask
+    + {static} waitTurn() : WaiterTask
+  }
+
+  enum "WaiterTask.Kind" as Kind <<enumeration>> {
+    SEAT
+    TAKE_ORDER
+    SERVE
+    WAIT
+  }
+
+  class Seating <<record>> {
+    - customer : Customer
+    - table : Table
+  }
+
+  note top of GameUI
+    <b>Dependency inversion</b>
+    GameController depends on the GameUI interface,
+    which lives in the control package. GameCLI (and
+    the scripted test doubles) implement it, so no game
+    rule lives in the console code and whole games run
+    in JUnit.
+  end note
+}
+
+package "restaurantrush.entity  <<entity>>" as entity #FFF7F0 {
+  class Restaurant {
+    - menu : Menu
+    - log : TurnLog
+    - happyHour : HappyHour
+    - tables : List<Table>
+    - waitingQueue : List<Customer>
+    - customers : List<Customer>
+    - orders : List<Order>
+    + Restaurant(menu : Menu, tableCount : int, log : TurnLog)
+    + Restaurant(menu : Menu, tableCount : int, log : TurnLog, happyHour : HappyHour)
+    + menu() : Menu
+    + log() : TurnLog
+    + happyHour() : HappyHour
+    + tables() : List<Table>
+    + waitingQueue() : List<Customer>
+    + customers() : List<Customer>
+    + orders() : List<Order>
+    + table(number : int) : Table
+    + customer(id : String) : Customer
+    + presentCustomers() : List<Customer>
+    + activeOrders() : List<Order>
+    + cookableOrders() : List<Order>
+    + servableOrders(turn : int) : List<Order>
+    + seatedWithoutOrder() : List<Customer>
+    + canSeatSomeone() : boolean
+    + canSeat(c : Customer) : ActionResult
+    + admit(c : Customer) : void
+    ~ seat(c : Customer, t : Table) : ActionResult
+    ~ placeOrder(c : Customer, turn : int) : ActionResult
+    ~ serve(o : Order, turn : int) : ActionResult
+    + finishEating(turn : int) : void
+    + recoverAwaitingCustomers(amount : int) : void
+    + applyWaitingDecay() : List<Customer>
+  }
+
+  abstract class Staff {
+    - role : String
+    - actedThisTurn : boolean
+    # Staff(role : String)
+    + role() : String
+    + hasActed() : boolean
+    + startTurn() : void
+    # perform(action : Supplier<ActionResult>) : ActionResult
+  }
+
+  class Host {
+    + Host()
+    + seat(r : Restaurant, c : Customer, t : Table) : ActionResult
+  }
+
+  class Waiter {
+    + Waiter()
+    + seat(r : Restaurant, c : Customer, t : Table) : ActionResult
+    + takeOrder(r : Restaurant, c : Customer, turn : int) : ActionResult
+    + serve(r : Restaurant, o : Order, turn : int) : ActionResult
+  }
+
+  class Chef {
+    + Chef()
+    + cook(o : Order, turn : int) : ActionResult
+  }
+
+  class Cashier {
+    + Cashier()
+    + collectPayment(r : Restaurant, turn : int) : Optional<Customer>
+  }
+
+  abstract class Customer {
+    + {static} MAX_SATISFACTION : int = 100
+    - arrivalNo : int
+    - arrivalTurn : int
+    - satisfaction : int = 100
+    - status : CustomerStatus = WAITING
+    - table : Table
+    - order : Order
+    - servedTurn : int
+    - readyToPayTurn : int
+    - paidSatisfaction : int
+    # Customer(arrivalNo : int, arrivalTurn : int)
+    + {abstract} lossPerTurn() : int
+    + {abstract} typeName() : String
+    + priceFor(item : MenuItem) : Money
+    + chooseItem(menu : Menu) : MenuItem
+    + onServed(o : Order, turn : int, log : TurnLog) : void
+    + id() : String
+    + arrivalNo() : int
+    + arrivalTurn() : int
+    + satisfaction() : int
+    + status() : CustomerStatus
+    + table() : Table
+    + order() : Order
+    + servedTurn() : int
+    + readyToPayTurn() : int
+    + paidSatisfaction() : int
+    + isAwaitingService() : boolean
+    ~ decay() : boolean
+    # reduceSatisfaction(points : int) : void {leaf}
+    ~ recover(points : int) : void
+    ~ seatAt(t : Table) : void
+    ~ attachOrder(o : Order) : void
+    ~ markServed(turn : int) : void
+    ~ markReadyToPay(turn : int) : void
+    ~ markPaid() : void
+    ~ leave() : void
+    - releaseTable() : void
+    - requireStatus(expected : CustomerStatus) : void
+    + toString() : String
+  }
+
+  class RegularCustomer {
+    + {static} LOSS_PER_TURN : int = 8
+    + RegularCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+  }
+
+  class VIPCustomer {
+    + {static} LOSS_PER_TURN : int = 5
+    + {static} DISCOUNT_PERCENT : int = 10
+    + VIPCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+    + priceFor(item : MenuItem) : Money
+  }
+
+  class CriticCustomer {
+    + {static} LOSS_PER_TURN : int = 12
+    + {static} COLD_FOOD_PENALTY : int = 20
+    + CriticCustomer(arrivalNo : int, arrivalTurn : int)
+    + lossPerTurn() : int
+    + typeName() : String
+    + onServed(o : Order, turn : int, log : TurnLog) : void
+  }
+
+  enum CustomerStatus <<enumeration>> {
+    WAITING
+    SEATED
+    ORDERED
+    SERVED
+    READY_TO_PAY
+    PAID
+    LEFT
+  }
+
+  class Table {
+    - number : int
+    - occupant : Customer
+    + Table(number : int)
+    + number() : int
+    + isFree() : boolean
+    + occupant() : Customer
+    ~ assign(c : Customer) : void
+    ~ release() : void
+  }
+
+  class Order {
+    - customer : Customer
+    - item : MenuItem
+    - price : Money
+    - placedTurn : int
+    - unitsDone : int
+    - status : OrderStatus = PLACED
+    - readyTurn : int
+    - servedTurn : int
+    ~ Order(c : Customer, item : MenuItem, price : Money, placedTurn : int)
+    + customer() : Customer
+    + item() : MenuItem
+    + price() : Money
+    + placedTurn() : int
+    + unitsDone() : int
+    + status() : OrderStatus
+    + readyTurn() : int
+    + servedTurn() : int
+    + progress() : String
+    + describe() : String
+    + canCook() : ActionResult
+    + canServe(turn : int) : ActionResult
+    ~ cook(turn : int) : void
+    ~ markServed(turn : int) : void
+    ~ markPaid() : void
+    ~ cancel() : void
+  }
+
+  enum OrderStatus <<enumeration>> {
+    PLACED
+    READY
+    SERVED
+    PAID
+    CANCELLED
+  }
+
+  class Menu {
+    - items : List<MenuItem>
+    + Menu(items : List<MenuItem>)
+    + items() : List<MenuItem>
+    + itemFor(arrivalNo : int) : MenuItem
+  }
+
+  abstract class MenuItem {
+    - name : String
+    # MenuItem(name : String)
+    + name() : String
+    + {abstract} price() : Money
+    + {abstract} prepUnits() : int
+    + toString() : String
+  }
+
+  class Dish {
+    - price : Money
+    - prepUnits : int
+    + Dish(name : String, price : Money, prepUnits : int)
+    + price() : Money
+    + prepUnits() : int
+  }
+
+  class ComboMeal {
+    + {static} DISCOUNT_PERCENT : int = 10
+    - first : MenuItem
+    - second : MenuItem
+    + ComboMeal(first : MenuItem, second : MenuItem)
+    + first() : MenuItem
+    + second() : MenuItem
+    + price() : Money
+    + prepUnits() : int
+  }
+
+  class HappyHour {
+    + {static} DISCOUNT_PERCENT : int = 20
+    + {static} RECOVERY : int = 15
+    + {static} DURATION_TURNS : int = 2
+    - used : boolean
+    - turnsRemaining : int
+    + isAvailable() : boolean
+    + isActive() : boolean
+    + turnsRemaining() : int
+    + activate() : ActionResult
+    + endTurn() : void
+    + adjust(price : Money) : Money
+    + status() : String
+  }
+
+  class Scoreboard {
+    - restaurant : Restaurant
+    + Scoreboard(r : Restaurant)
+    + revenue() : Money
+    + paidCount() : int
+    + paidSatisfactionSum() : int
+    + averageSatisfaction() : OptionalDouble
+    + servedCount() : int
+    + unhappyDepartures() : int
+    - count(status : CustomerStatus) : int
+  }
+
+  class TurnLog {
+    - lines : List<String>
+    + add(line : String) : void
+    + drain() : List<String>
+  }
+
+  class Money <<record>> {
+    - cents : long
+    + {static} ZERO : Money
+    + {static} ofDollars(dollars : long) : Money
+    + plus(other : Money) : Money
+    + percentOff(percent : int) : Money
+    + compareTo(other : Money) : int
+    + toString() : String
+  }
+
+  class ActionResult <<record>> {
+    - success : boolean
+    - message : String
+    + {static} ok(message : String) : ActionResult
+    + {static} fail(reason : String) : ActionResult
+  }
+
+  note right of Staff
+    <b>Inheritance + one rule for every role</b>
+    perform() runs an action only if the staff member
+    has not acted this turn, and uses up the task only
+    when the action succeeds - so a rejected choice can
+    be retried. Host and Waiter both seat through
+    Restaurant.seat(), so they can never disagree.
+  end note
+  note bottom of CriticCustomer
+    <b>Polymorphism</b>
+    The controller never checks a customer's type.
+    lossPerTurn(), priceFor() and onServed() are
+    dispatched to the subclass: VIP pays 10% less and
+    loses 5; Critic loses 12 and takes -20 for food
+    served more than one turn after it became READY.
+  end note
+  note bottom of Order
+    <b>Encapsulation</b>
+    Seating, ordering, serving and every status change are
+    package-private (~) and guarded by the object that owns
+    the state (requireStatus, canCook, canServe), so control
+    and boundary code cannot bypass a rule: they get public
+    queries and unmodifiable lists. The Order constructor is
+    package-private, so only Restaurant.placeOrder() can
+    create an order and lock its price:
+    happyHour.adjust(customer.priceFor(item)).
+  end note
+  note bottom of ComboMeal
+    <b>Composition (Composite)</b>
+    A ComboMeal is a MenuItem built from two MenuItems
+    and delegates to them: prepUnits = sum of the parts,
+    price = 90% of their total. Order and Chef only see
+    MenuItem, so combos needed no change there. The parts
+    are shared with the menu (Salad is also sold alone),
+    so this is aggregation; Restaurant owns its Tables and
+    Orders outright (filled diamonds).
+  end note
+  note bottom of Money
+    Immutable value in integer cents;
+    percentOff() rounds half-up to the cent.
+  end note
+
+  ' layout hints only (no meaning): keep value types and the log near the bottom
+  OrderStatus -[hidden]down- Money
+  Money -[hidden]right- ActionResult
+  HappyHour -[hidden]down- TurnLog
+}
+
+' ---------- layout hints only (no meaning): stack the packages top to bottom ----------
+StatusView -[hidden]down- GameSetup
+InputEndedException -[hidden]down- GameSetup
+Kind -[hidden]down- Staff
+Seating -[hidden]down- Staff
+
+' ---------- boundary ----------
+Main ..> GameSetup : <<use>>
+Main ..> GameCLI : <<create>>
+Main ..> InputEndedException : <<catch>>
+GameCLI ..|> GameUI
+GameCLI *--> "1" StatusView : view
+GameCLI ..> InputEndedException : <<throw>>
+
+' ---------- control ----------
+GameSetup ..> GameController : <<create>>
+GameController --> "1" GameUI : ui
+GameController --> "1" GameConfig : config
+GameController --> "1" ArrivalSchedule : schedule
+GameController --> "1" Restaurant : restaurant
+GameController *--> "1" Scoreboard : scoreboard
+GameController --> "1" Host : host
+GameController --> "1" Waiter : waiter
+GameController --> "1" Chef : chef
+GameController --> "1" Cashier : cashier
+GameController ..> WaiterTask : <<use>>
+GameController ..> Seating : <<use>>
+WaiterTask --> "1" Kind : kind
+ArrivalSchedule ..> Customer : <<create>>
+GameConfig ..> Scoreboard : <<use>>
+
+' ---------- entity ----------
+Restaurant o--> "1" Menu : menu
+Restaurant *--> "1..*" Table : tables
+Restaurant o--> "0..*" Customer : customers\nwaitingQueue
+Restaurant *--> "0..*" Order : orders
+Restaurant --> "1" HappyHour : happyHour
+Restaurant --> "1" TurnLog : log
+Scoreboard --> "1" Restaurant : restaurant
+
+Staff <|-- Host
+Staff <|-- Waiter
+Staff <|-- Chef
+Staff <|-- Cashier
+Host ..> Restaurant : <<use>>
+Waiter ..> Restaurant : <<use>>
+Cashier ..> Restaurant : <<use>>
+Chef ..> Order : <<use>>
+
+Customer <|-- RegularCustomer
+Customer <|-- VIPCustomer
+Customer <|-- CriticCustomer
+Customer --> "1" CustomerStatus : status
+Customer "0..1 occupant" -- "0..1 table" Table
+Customer "1 customer" -- "0..1 order" Order
+Order --> "1" OrderStatus : status
+Order --> "1" MenuItem : item
+
+Menu o--> "1..*" MenuItem : items {ordered}
+MenuItem <|-- Dish
+MenuItem <|-- ComboMeal
+ComboMeal o--> "2" MenuItem : first, second
+
+legend bottom left
+  Visibility: + public, - private, # protected, ~ package-private. Underlined = static, italic = abstract.
+  <<record>>: each component is a private final field with a public accessor of the same name.
+  Omitted: implicit default constructors, record accessors, equals/hashCode, StatusView's private formatting helpers, lambdas.
+endlegend
+
+@enduml

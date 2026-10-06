@@ -1,0 +1,7 @@
+@startuml class-diagram-overview
+' One-page overview of class-diagram.puml: same classes, relationships and notes, members hidden.
+!include class-diagram.puml
+hide members
+show <<enumeration>> fields
+title Restaurant Rush - class overview (members hidden; full detail in class-diagram)
+@enduml

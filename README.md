@@ -37,12 +37,20 @@ java -cp out/main restaurantrush.boundary.Main
 ./run.sh --echo < runs/defeat.txt
 ```
 
-`--echo` prints each scripted answer after its prompt so the transcript reads like a live game. Lines starting with `#` are notes and are skipped. `RunScriptsTest` replays both scripts on every test run.
+`--echo` prints each scripted answer after its prompt so the transcript reads like a live game. Lines starting with `#` are notes and are skipped. `RunScriptsTest` replays every script below on every test run.
 
 | Script | Strategy | Expected result |
 |---|---|---|
 | `victory.txt` | Host seats every arrival so the Waiter can take the order the same turn; Happy Hour on turn 8 keeps the Critic happy while the Pasta finishes; serve READY dishes before anything else | VICTORY: 5 paid, $86.40, average satisfaction 89.4 |
 | `defeat.txt` | Shows invalid input being rejected, then nobody acts all game | DEFEAT: 0 paid, $0.00, average N/A, 2 unhappy departures (C1 and the Critic) |
+
+Three what-if runs change one decision in `victory.txt` to show how a choice changes the result (see the [design discussion](docs/report/design-discussion.md#7-how-the-players-choices-change-the-result)):
+
+| Script | Change from `victory.txt` | Expected result |
+|---|---|---|
+| `what-if-no-happy-hour.txt` | Happy Hour is never switched on | VICTORY: 5 paid, $86.40, average 84.6 (the Critic pays with 76 instead of 100) |
+| `what-if-critic-served-late.txt` | Turn 9: the Waiter waits instead of serving the Critic | VICTORY: 5 paid, $86.40, average 79.8 (cold food: the Critic pays with 68, and C4 is delayed) |
+| `what-if-host-idle.txt` | Turn 13: the Host waits and the Waiter seats C5 | VICTORY: 4 paid, $62.10, average 92.8 (C5 cannot pay in time) |
 
 ## How to play
 
@@ -145,17 +153,25 @@ New files:
 
 Changed files:
 - `entity/Customer.java`: added `recover(points)`, because Happy Hour raises satisfaction (capped at 100).
-- `entity/Restaurant.java`: holds the `HappyHour`; `placeOrder()` applies `happyHour.adjust(...)` after the customer's own discount, which is the moment the price is locked; added `recoverAwaitingCustomers()`. The original three-argument constructor is kept (a restaurant whose Happy Hour is never used), so earlier tests are unchanged.
+- `entity/Restaurant.java`: holds the `HappyHour`; `canSeat()` exposes the seating check so the console can reject a customer before asking for a table, and `seat()` uses the same check; `placeOrder()` applies `happyHour.adjust(...)` after the customer's own discount, which is the moment the price is locked; added `recoverAwaitingCustomers()`. The original three-argument constructor is kept (a restaurant whose Happy Hour is never used), so earlier tests are unchanged.
 - `control/GameUI.java`: added `askActivateHappyHour()` and `chooseHostSeating()`; a new staff role and a new manager decision need new questions.
 - `control/GameController.java`: added the Happy Hour step and the Host step before the Waiter, and the Happy Hour countdown at the end of the turn. The rest of the turn sequence is unchanged.
 - `control/GameSetup.java`: registers the three combos on the menu, creates the Host and the Happy Hour, edition label.
-- `boundary/GameCLI.java`: the Happy Hour and Host prompts. `boundary/StatusView.java`: the Happy Hour status line.
+- `boundary/GameCLI.java`: the Happy Hour and Host prompts. When seating, a customer who is not waiting for a table is rejected before a table is asked for, using the new read-only `Restaurant.canSeat()`. `boundary/StatusView.java`: the Happy Hour status line.
 - Tests: `ScriptedUI` and `Games` (test helpers) support the Host and Happy Hour; `RunScriptsTest` expects the Stage 3 results; new tests in `RestaurantTest`, `GameControllerTest`, `GameCLITest`, `StatusViewTest`.
 - `runs/*.txt`: new answers for the Happy Hour and Host prompts.
 
 Unchanged: the food-choice rule (`Menu.itemFor`), all customer classes except `Customer.recover`, `Order`, `Waiter`, `Chef`, `Cashier`, `ArrivalSchedule`. Combos reach customers through the existing rotation rule with no code change, only menu registration.
 
 Alternative considered: a list of "staff decision phases" that the controller loops over, so the Host would be registered without editing `GameController`. We kept the direct version because it is one addition and easier to read; the trade-off is one controller edit per new role.
+
+## Design evidence
+
+- [Class diagram](docs/diagrams/class-diagram.svg) of the final (`stage-3`) code, plus a one-page [overview](docs/diagrams/class-diagram-overview.svg).
+- [Sequence diagram](docs/diagrams/sequence-diagram-1.svg) in four parts: the Critic's visit in the victory run, from arrival to payment, and the result check.
+- [Design discussion](docs/report/design-discussion.md): responsibilities, design principles, trade-offs, the alternative we considered, and how the player's choices change the result.
+
+Sources and re-rendering instructions are in [`docs/diagrams/`](docs/diagrams/README.md).
 
 ## Video timestamps
 
