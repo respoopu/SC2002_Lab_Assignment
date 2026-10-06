@@ -1,0 +1,27 @@
+# Restaurant Rush - defeat run (base setting)
+# Turn 1 shows invalid input being rejected; after that the Waiter waits
+# every turn, so nobody is served and two customers leave.
+# Expected: DEFEAT - 0 paid, $0.00, average N/A, 2 unhappy departures
+# Turn 1: a word, an out-of-range number, Serve with nothing to serve, then Wait
+abc
+9
+3
+0
+# Turns 2-18: Wait
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0

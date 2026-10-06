@@ -1,0 +1,67 @@
+# Restaurant Rush - victory run (base setting)
+# Expected: VICTORY - 5 paid, $66.00, average satisfaction 79.2
+# Turn 1: seat C1 at table 1
+1
+1
+1
+# Turn 2: take C1's order (Salad); Chef cooks it
+2
+1
+1
+# Turn 3: serve C1's Salad
+3
+1
+# Turn 4: seat C2 at table 2
+1
+2
+2
+# Turn 5: take C2's order (Burger); Chef cooks it
+2
+2
+1
+# Turn 6: serve C2's Burger
+3
+1
+# Turn 7: seat C3 at table 1
+1
+2
+1
+# Turn 8: take C3's order (Pasta); Chef cooks unit 1
+2
+2
+1
+# Turn 9: the Waiter has nothing to do; Chef cooks unit 2
+1
+# Turn 10: staff constrained - serve C3's Pasta now and let C4 wait
+3
+1
+# Turn 11: seat C4 at table 2
+1
+2
+2
+# Turn 12: take C4's order (Salad); Chef cooks it
+2
+2
+1
+# Turn 13: serve C4's Salad before seating C5
+3
+1
+# Turn 14: seat C5 at table 1
+1
+2
+1
+# Turn 15: take C5's order (Burger); Chef cooks it
+2
+2
+1
+# Turn 16: serve C5's Burger before seating C6
+3
+1
+# Turn 17: seat C6 at table 2
+1
+2
+2
+# Turn 18: take C6's order (Pasta); Chef starts it - C6 cannot pay in time
+2
+2
+1
