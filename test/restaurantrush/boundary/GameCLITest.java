@@ -66,6 +66,17 @@ class GameCLITest {
     }
 
     @Test
+    void waiterSeatingRejectsACustomerWhoIsNotWaitingBeforeAskingForATable() {
+        new Waiter().seat(restaurant, restaurant.customer("C1"), restaurant.table(1));
+        WaiterTask task = cli("1\n1\n2\n2\n").chooseWaiterTask(restaurant);
+        assertEquals("C2", task.customer().id());
+        assertEquals(2, task.table().number());
+        String out = printed();
+        assertTrue(out.contains("Not allowed: C1 is not waiting for a table (SEATED). Choose again."), out);
+        assertEquals(1, out.split("At which table\\?", -1).length - 1, out);
+    }
+
+    @Test
     void zeroInATargetListGoesBackToTheTaskMenu() {
         assertEquals(WaiterTask.Kind.WAIT, cli("2\n0\n0\n").chooseWaiterTask(restaurant).kind());
     }
@@ -108,6 +119,17 @@ class GameCLITest {
         Seating seating = cli("2\n2\n").chooseHostSeating(restaurant).orElseThrow();
         assertEquals("C2", seating.customer().id());
         assertEquals(2, seating.table().number());
+    }
+
+    @Test
+    void hostSeatingRejectsACustomerWhoIsNotWaitingBeforeAskingForATable() {
+        new Waiter().seat(restaurant, restaurant.customer("C1"), restaurant.table(1));
+        Seating seating = cli("1\n2\n2\n").chooseHostSeating(restaurant).orElseThrow();
+        assertEquals("C2", seating.customer().id());
+        assertEquals(2, seating.table().number());
+        String out = printed();
+        assertTrue(out.contains("Not allowed: C1 is not waiting for a table (SEATED). Choose again."), out);
+        assertEquals(1, out.split("At which table\\?", -1).length - 1, out);
     }
 
     @Test

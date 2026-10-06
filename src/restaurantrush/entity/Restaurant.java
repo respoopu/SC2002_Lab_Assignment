@@ -117,9 +117,17 @@ public class Restaurant {
         log.add(customer + " arrives and joins the waiting queue (satisfaction " + customer.satisfaction() + ").");
     }
 
+    /** Only a customer still waiting for a table can be seated. */
+    public ActionResult canSeat(Customer customer) {
+        return customer.status() == CustomerStatus.WAITING
+                ? ActionResult.ok(customer.id() + " can be seated")
+                : ActionResult.fail(customer.id() + " is not waiting for a table (" + customer.status() + ")");
+    }
+
     ActionResult seat(Customer customer, Table table) {
-        if (customer.status() != CustomerStatus.WAITING) {
-            return ActionResult.fail(customer.id() + " is not waiting for a table (" + customer.status() + ")");
+        ActionResult check = canSeat(customer);
+        if (!check.success()) {
+            return check;
         }
         if (!table.isFree()) {
             return ActionResult.fail("Table " + table.number() + " is occupied by " + table.occupant().id());

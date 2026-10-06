@@ -10,6 +10,7 @@ import restaurantrush.control.GameConfig;
 import restaurantrush.control.GameUI;
 import restaurantrush.control.Seating;
 import restaurantrush.control.WaiterTask;
+import restaurantrush.entity.ActionResult;
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Order;
@@ -64,8 +65,7 @@ public class GameCLI implements GameUI {
     @Override
     public Optional<Seating> chooseHostSeating(Restaurant restaurant) {
         while (true) {
-            Optional<Customer> customer = pick("Host, choose a customer to seat (0 = Wait):",
-                    restaurant.presentCustomers(), view::describeCustomer);
+            Optional<Customer> customer = pickCustomerToSeat("Host, choose a customer to seat (0 = Wait):", restaurant);
             if (customer.isEmpty()) {
                 return Optional.empty();
             }
@@ -89,8 +89,7 @@ public class GameCLI implements GameUI {
                 return WaiterTask.waitTurn();
             }
             if (choice == 1) {
-                Optional<Customer> customer = pick("Seat which customer? (0 = back)",
-                        restaurant.presentCustomers(), view::describeCustomer);
+                Optional<Customer> customer = pickCustomerToSeat("Seat which customer? (0 = back)", restaurant);
                 if (customer.isEmpty()) {
                     continue;
                 }
@@ -127,6 +126,24 @@ public class GameCLI implements GameUI {
     @Override
     public void showResult(boolean victory, Scoreboard scoreboard, GameConfig config) {
         out.println(view.result(victory, scoreboard, config));
+    }
+
+    /**
+     * Asks for a customer to seat. A customer who is not waiting for a table is
+     * rejected straight away, before any table is asked for.
+     */
+    private Optional<Customer> pickCustomerToSeat(String question, Restaurant restaurant) {
+        while (true) {
+            Optional<Customer> customer = pick(question, restaurant.presentCustomers(), view::describeCustomer);
+            if (customer.isEmpty()) {
+                return customer;
+            }
+            ActionResult check = restaurant.canSeat(customer.get());
+            if (check.success()) {
+                return customer;
+            }
+            out.println("Not allowed: " + check.message() + ". Choose again.");
+        }
     }
 
     private <T> Optional<T> pick(String question, List<T> options, Function<T, String> label) {

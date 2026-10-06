@@ -126,6 +126,8 @@ READY_TO_PAY → paid turn 6 with 76 recorded.
   Target lists include every candidate, including invalid ones, so domain
   rejections are reachable (e.g. "Table 2 is occupied by C1",
   "C3's Pasta is still cooking (1/2)").
+- Seating checks the customer as soon as they are picked: one who is not
+  waiting for a table is rejected before a table is asked for.
 - Rejected choice: reason printed, same staff member asked again, task not
   consumed.
 - Non-numeric or out-of-range input: re-prompt.
