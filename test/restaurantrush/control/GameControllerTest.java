@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import restaurantrush.entity.CriticCustomer;
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.CustomerStatus;
 import restaurantrush.entity.Dish;
@@ -16,6 +17,7 @@ import restaurantrush.entity.OrderStatus;
 import restaurantrush.entity.RegularCustomer;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.TurnLog;
+import restaurantrush.entity.VIPCustomer;
 
 class GameControllerTest {
     private final Dish salad = new Dish("Salad", Money.ofDollars(9), 1);
@@ -125,5 +127,39 @@ class GameControllerTest {
         assertEquals(1, game.scoreboard().unhappyDepartures());
         assertEquals(Money.ZERO, game.scoreboard().revenue());
         assertTrue(ui.saw("C1 lost all patience and left without paying (order cancelled)."));
+    }
+
+    @Test
+    void customerTypesDecayAtTheirOwnRateThroughTheSameController() {
+        Restaurant restaurant = restaurantServing(salad);
+        GameController game = Games.controller(Games.config(2), restaurant,
+                new ArrivalSchedule().add(1, VIPCustomer::new).add(2, CriticCustomer::new), new ScriptedUI());
+
+        game.playTurn(1);
+        game.playTurn(2);
+
+        assertEquals(90, restaurant.customer("C1").satisfaction());
+        assertEquals(88, restaurant.customer("C2").satisfaction());
+    }
+
+    @Test
+    void servingTheCriticLateTriggersTheColdFoodPenalty() {
+        Restaurant restaurant = restaurantServing(pasta);
+        ScriptedUI ui = new ScriptedUI()
+                .waiterOn(1, r -> WaiterTask.seat(r.customer("C1"), r.table(1)))
+                .waiterOn(2, r -> WaiterTask.takeOrder(r.customer("C1")))
+                .chefOn(2, r -> Optional.of(r.customer("C1").order()))
+                .chefOn(3, r -> Optional.of(r.customer("C1").order()))
+                .waiterOn(5, r -> WaiterTask.serve(r.customer("C1").order()));
+        GameController game = Games.controller(Games.config(5), restaurant,
+                new ArrivalSchedule().add(1, CriticCustomer::new), ui);
+
+        for (int t = 1; t <= 5; t++) {
+            game.playTurn(t);
+        }
+
+        // 100 - 4 unserved turns x 12 = 52, then -20 because the Pasta was READY on turn 3
+        assertEquals(32, restaurant.customer("C1").satisfaction());
+        assertTrue(ui.saw("C1 (Critic): cold food! -20 satisfaction (now 32)."));
     }
 }

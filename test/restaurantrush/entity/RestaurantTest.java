@@ -147,4 +147,29 @@ class RestaurantTest {
         assertTrue(restaurant.waitingQueue().isEmpty());
         assertFalse(restaurant.canSeatSomeone());
     }
+
+    @Test
+    void servingTellsTheCustomerSoTheyCanReact() {
+        CriticCustomer critic = new CriticCustomer(3, 1);
+        Order pasta = Dining.seatedWithOrder(restaurant, critic, 1);
+        Dining.cookFully(pasta, 2);
+        restaurant.log().drain();
+        restaurant.serve(pasta, 4);
+        assertEquals(80, critic.satisfaction());
+        assertEquals(List.of("C3 (Critic): cold food! -20 satisfaction (now 80)."), restaurant.log().drain());
+    }
+
+    @Test
+    void servedCriticAtZeroStaysAndIsNotTreatedAsWaiting() {
+        CriticCustomer critic = new CriticCustomer(3, 1);
+        Order pasta = Dining.seatedWithOrder(restaurant, critic, 1);
+        for (int i = 0; i < 8; i++) {
+            restaurant.applyWaitingDecay();
+        }
+        Dining.cookFully(pasta, 9);
+        restaurant.serve(pasta, 12);
+        assertEquals(0, critic.satisfaction());
+        assertTrue(restaurant.applyWaitingDecay().isEmpty());
+        assertEquals(CustomerStatus.SERVED, critic.status());
+    }
 }
