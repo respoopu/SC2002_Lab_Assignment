@@ -1,0 +1,85 @@
+# Restaurant Rush - what-if run: Happy Hour is never switched on
+# Same moves as victory.txt, except the manager answers 0 to Happy Hour every turn.
+# The Critic (C3) is not topped up while the Pasta cooks, so C3 pays with 76 instead of 100.
+# Expected: VICTORY - 5 paid, $86.40, average satisfaction 84.6 (victory.txt: 89.4)
+# Turn 1: Host seats C1 at table 1; Waiter takes C1's order (Salad); Chef cooks it
+0
+1
+1
+2
+1
+1
+# Turn 2: serve C1's Salad
+0
+3
+1
+# Turn 3: everyone else waits automatically
+0
+# Turn 4: Host seats C2 (VIP) at table 2; Waiter takes C2's order (Burger, $13.50); Chef cooks it
+0
+2
+2
+2
+2
+1
+# Turn 5: serve C2's Burger
+0
+3
+1
+# Turn 6: nothing to do
+0
+# Turn 7: Host seats C3 (Critic) at table 1; Waiter takes C3's order (Pasta); Chef cooks unit 1
+0
+2
+1
+2
+2
+1
+# Turn 8: (what-if) Happy Hour not switched on; Chef cooks unit 2 of C3's Pasta
+0
+1
+# Turn 9: Happy Hour 0; serve C3's Pasta fresh
+0
+3
+1
+# Turn 10: Happy Hour 0; Host seats C4 at table 2; Waiter takes C4's order (Salad + Burger); Chef cooks unit 1
+0
+2
+2
+2
+2
+1
+# Turn 11: Happy Hour 0; Chef cooks unit 2
+0
+1
+# Turn 12: Happy Hour 0; serve C4's combo
+0
+3
+1
+# Turn 13: Happy Hour 0; Host seats C5 at table 1; Waiter takes C5's order (Salad + Pasta); Chef cooks unit 1
+0
+2
+1
+2
+2
+1
+# Turn 14: Happy Hour 0; Chef cooks unit 2
+0
+1
+# Turn 15: Happy Hour 0; Chef cooks unit 3
+0
+1
+# Turn 16: Happy Hour 0; Host seats C6 at table 2; Waiter serves C5's combo
+0
+2
+2
+3
+1
+# Turn 17: Happy Hour 0; take C6's order (Burger + Pasta); Chef cooks unit 1
+0
+2
+2
+1
+# Turn 18: Happy Hour 0; Chef cooks unit 2 - C6 cannot pay in time
+0
+1
