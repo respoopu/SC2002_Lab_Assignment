@@ -1,27 +1,80 @@
 # Restaurant Rush - defeat run (base setting)
-# Turn 1 shows invalid input being rejected; after that the Waiter waits
-# every turn, so nobody is served; C1 and the Critic (C3) leave.
+# Turn 1 shows invalid input being rejected; after that nobody acts, so
+# nobody is served; C1 and the Critic (C3) leave.
 # Expected: DEFEAT - 0 paid, $0.00, average N/A, 2 unhappy departures
-# Turn 1: a word, an out-of-range number, Serve with nothing to serve, then Wait
+# Every turn: Happy Hour 0 (not yet), Host 0 (wait), Waiter 0 (wait).
+# Turn 1: Happy Hour, Host, then the Waiter gets a word, an out-of-range number, Serve with nothing to serve, then Wait
+0
+0
 abc
 9
 3
 0
-# Turns 2-18: Wait
+# Turn 2
 0
 0
 0
+# Turn 3
 0
 0
 0
+# Turn 4
 0
 0
 0
+# Turn 5
 0
 0
 0
+# Turn 6
 0
 0
+0
+# Turn 7
+0
+0
+0
+# Turn 8
+0
+0
+0
+# Turn 9
+0
+0
+0
+# Turn 10
+0
+0
+0
+# Turn 11
+0
+0
+0
+# Turn 12
+0
+0
+0
+# Turn 13
+0
+0
+0
+# Turn 14
+0
+0
+0
+# Turn 15
+0
+0
+0
+# Turn 16
+0
+0
+0
+# Turn 17
+0
+0
+0
+# Turn 18
 0
 0
 0

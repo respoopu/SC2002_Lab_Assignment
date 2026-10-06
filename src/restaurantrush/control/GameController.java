@@ -7,6 +7,8 @@ import restaurantrush.entity.ActionResult;
 import restaurantrush.entity.Cashier;
 import restaurantrush.entity.Chef;
 import restaurantrush.entity.Customer;
+import restaurantrush.entity.HappyHour;
+import restaurantrush.entity.Host;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Scoreboard;
@@ -23,6 +25,7 @@ public class GameController {
     private final Restaurant restaurant;
     private final Scoreboard scoreboard;
     private final ArrivalSchedule schedule;
+    private final Host host;
     private final Waiter waiter;
     private final Chef chef;
     private final Cashier cashier;
@@ -30,11 +33,12 @@ public class GameController {
     private int turn;
 
     public GameController(GameConfig config, Restaurant restaurant, ArrivalSchedule schedule,
-                          Waiter waiter, Chef chef, Cashier cashier, GameUI ui) {
+                          Host host, Waiter waiter, Chef chef, Cashier cashier, GameUI ui) {
         this.config = config;
         this.restaurant = restaurant;
         this.scoreboard = new Scoreboard(restaurant);
         this.schedule = schedule;
+        this.host = host;
         this.waiter = waiter;
         this.chef = chef;
         this.cashier = cashier;
@@ -62,6 +66,7 @@ public class GameController {
     /** Plays one turn. Package-private so tests can check the state between turns. */
     void playTurn(int t) {
         turn = t;
+        host.startTurn();
         waiter.startTurn();
         chef.startTurn();
         cashier.startTurn();
@@ -70,15 +75,45 @@ public class GameController {
         schedule.arrivalAt(turn).ifPresent(restaurant::admit);      // 1 arrivals
         flushLog();
         ui.showState(restaurant, scoreboard, availableTasks());
+        happyHourStep();                                            // promotion decided at turn start
 
-        waiterStep();                                               // 2-3 the Waiter acts before the Chef
+        hostStep();                                                 // 2-3 the Host, then the Waiter before the Chef
+        waiterStep();
         chefStep();
 
         cashier.collectPayment(restaurant, turn);                   // 4 payment, then eating
         restaurant.finishEating(turn);
         restaurant.applyWaitingDecay();                             // 5 waiting and abandonment
+        restaurant.happyHour().endTurn();
         flushLog();
         ui.showTurnEnd(turn, config.maxTurns(), scoreboard);        // 6 results
+    }
+
+    private void happyHourStep() {
+        HappyHour happyHour = restaurant.happyHour();
+        if (happyHour.isAvailable() && ui.askActivateHappyHour(happyHour)) {
+            report(happyHour.activate());
+        }
+        if (happyHour.isActive()) {
+            restaurant.recoverAwaitingCustomers(HappyHour.RECOVERY);
+            flushLog();
+        }
+    }
+
+    private void hostStep() {
+        if (!restaurant.canSeatSomeone()) {
+            ui.showMessage("Host has no one to seat and waits.");
+            return;
+        }
+        while (true) {
+            Optional<Seating> choice = ui.chooseHostSeating(restaurant);
+            ActionResult result = choice.map(s -> host.seat(restaurant, s.customer(), s.table()))
+                    .orElse(ActionResult.ok("Host waits."));
+            report(result);
+            if (result.success()) {
+                return;
+            }
+        }
     }
 
     private void waiterStep() {
@@ -143,6 +178,7 @@ public class GameController {
         List<String> tasks = new ArrayList<>();
         if (restaurant.canSeatSomeone()) {
             tasks.add("Waiter: seat a waiting customer");
+            tasks.add("Host: seat a waiting customer");
         }
         for (Customer customer : restaurant.seatedWithoutOrder()) {
             tasks.add("Waiter: take " + customer.id() + "'s order");

@@ -2,6 +2,7 @@ package restaurantrush.control;
 
 import java.util.List;
 import java.util.Optional;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Scoreboard;
@@ -18,6 +19,12 @@ public interface GameUI {
     void showMessage(String message);
 
     void showState(Restaurant restaurant, Scoreboard scoreboard, List<String> availableTasks);
+
+    /** Asked at the start of a turn while Happy Hour is still unused. */
+    boolean askActivateHappyHour(HappyHour happyHour);
+
+    /** Who the Host should seat and where, or empty to wait. */
+    Optional<Seating> chooseHostSeating(Restaurant restaurant);
 
     WaiterTask chooseWaiterTask(Restaurant restaurant);
 

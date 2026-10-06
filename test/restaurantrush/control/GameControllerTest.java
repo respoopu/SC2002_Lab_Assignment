@@ -162,4 +162,70 @@ class GameControllerTest {
         assertEquals(32, restaurant.customer("C1").satisfaction());
         assertTrue(ui.saw("C1 (Critic): cold food! -20 satisfaction (now 32)."));
     }
+
+    @Test
+    void hostSeatsOnArrivalSoTheWaiterCanTakeTheOrderTheSameTurn() {
+        Restaurant restaurant = restaurantServing(salad);
+        ScriptedUI ui = new ScriptedUI()
+                .hostOn(1, r -> Optional.of(new Seating(r.customer("C1"), r.table(1))))
+                .waiterOn(1, r -> WaiterTask.takeOrder(r.customer("C1")))
+                .chefOn(1, r -> Optional.of(r.customer("C1").order()));
+        GameController game = Games.controller(Games.config(1), restaurant, oneRegularOnTurnOne(), ui);
+
+        game.playTurn(1);
+
+        assertEquals(OrderStatus.READY, restaurant.customer("C1").order().status());
+    }
+
+    @Test
+    void hostAndWaiterCanEachSeatSomeoneInTheSameTurn() {
+        Restaurant restaurant = restaurantServing(salad);
+        ScriptedUI ui = new ScriptedUI()
+                .hostOn(2, r -> Optional.of(new Seating(r.customer("C1"), r.table(1))))
+                .waiterOn(2, r -> WaiterTask.seat(r.customer("C2"), r.table(2)));
+        GameController game = Games.controller(Games.config(2), restaurant,
+                new ArrivalSchedule().add(1, RegularCustomer::new).add(2, RegularCustomer::new), ui);
+
+        game.playTurn(1);
+        game.playTurn(2);
+
+        assertEquals(CustomerStatus.SEATED, restaurant.customer("C1").status());
+        assertEquals(CustomerStatus.SEATED, restaurant.customer("C2").status());
+    }
+
+    @Test
+    void happyHourIsOfferedUntilUsedAndLastsTwoTurns() {
+        Restaurant restaurant = restaurantServing(salad);
+        ScriptedUI ui = new ScriptedUI().happyHourOn(3);
+        GameController game = Games.controller(Games.config(5), restaurant, oneRegularOnTurnOne(), ui);
+        Customer c1 = null;
+
+        for (int t = 1; t <= 5; t++) {
+            game.playTurn(t);
+            c1 = restaurant.customer("C1");
+            if (t == 2) {
+                assertEquals(84, c1.satisfaction());
+            }
+            if (t == 3) {
+                assertEquals(91, c1.satisfaction()); // 84 + 15, then -8
+            }
+            if (t == 4) {
+                assertEquals(92, c1.satisfaction()); // 91 + 15 capped at 100, then -8
+            }
+        }
+
+        assertEquals(84, c1.satisfaction()); // turn 5: no recovery, -8
+        assertEquals(3, ui.happyHourPrompts);
+        assertTrue(ui.saw("Happy Hour is ON for this turn and the next"));
+    }
+
+    @Test
+    void happyHourOnTheLastTurnStillEndsTheGameNormally() {
+        ScriptedUI ui = new ScriptedUI().happyHourOn(2);
+        GameController game = Games.controller(Games.config(2), restaurantServing(salad), oneRegularOnTurnOne(), ui);
+
+        assertFalse(game.run());
+        assertEquals(Boolean.FALSE, ui.victory);
+        assertEquals(2, ui.happyHourPrompts);
+    }
 }

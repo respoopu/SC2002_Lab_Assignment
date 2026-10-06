@@ -1,67 +1,74 @@
 # Restaurant Rush - victory run (base setting, C2 is a VIP and C3 a Critic)
-# Expected: VICTORY - 5 paid, $64.50, average satisfaction 78.0
-# Turn 1: seat C1 at table 1
+# Expected: VICTORY - 5 paid, $86.40, average satisfaction 89.4
+# Each turn starts with the Happy Hour question while it is unused (0 = not yet).
+# Turn 1: Host seats C1 at table 1; Waiter takes C1's order (Salad); Chef cooks it
+0
 1
 1
-1
-# Turn 2: take C1's order (Salad); Chef cooks it
 2
 1
 1
-# Turn 3: serve C1's Salad
+# Turn 2: serve C1's Salad
+0
 3
 1
-# Turn 4: seat C2 at table 2
+# Turn 3: everyone else waits automatically
+0
+# Turn 4: Host seats C2 (VIP) at table 2; Waiter takes C2's order (Burger, $13.50); Chef cooks it
+0
+2
+2
+2
+2
 1
-2
-2
-# Turn 5: take C2's order (Burger); Chef cooks it
-2
-2
-1
-# Turn 6: serve C2's Burger
+# Turn 5: serve C2's Burger
+0
 3
 1
-# Turn 7: seat C3 at table 1
-1
+# Turn 6: nothing to do
+0
+# Turn 7: Host seats C3 (Critic) at table 1; Waiter takes C3's order (Pasta); Chef cooks unit 1
+0
 2
 1
-# Turn 8: take C3's order (Pasta); Chef cooks unit 1
 2
 2
 1
-# Turn 9: the Waiter has nothing to do; Chef cooks unit 2
+# Turn 8: activate Happy Hour so the Critic recovers while the Pasta finishes; Chef cooks unit 2
 1
-# Turn 10: staff constrained - serve the Critic's Pasta fresh now (seating C4 first would make it cold: -20)
+1
+# Turn 9: Happy Hour still on; serve the Critic's Pasta fresh
 3
 1
-# Turn 11: seat C4 at table 2
-1
+# Turn 10: Host seats C4 at table 2; Waiter takes C4's order (Salad + Burger); Chef cooks unit 1
 2
 2
-# Turn 12: take C4's order (Salad); Chef cooks it
 2
 2
 1
-# Turn 13: serve C4's Salad before seating C5
+# Turn 11: Chef cooks unit 2
+1
+# Turn 12: serve C4's combo
 3
 1
-# Turn 14: seat C5 at table 1
-1
+# Turn 13: Host seats C5 at table 1 so the Waiter can take the 3-unit Salad + Pasta order now; Chef cooks unit 1
 2
 1
-# Turn 15: take C5's order (Burger); Chef cooks it
 2
 2
 1
-# Turn 16: serve C5's Burger before seating C6
+# Turn 14: Chef cooks unit 2
+1
+# Turn 15: Chef cooks unit 3
+1
+# Turn 16: Host seats C6 at table 2; Waiter serves C5's combo
+2
+2
 3
 1
-# Turn 17: seat C6 at table 2
+# Turn 17: take C6's order (Burger + Pasta); Chef cooks unit 1
+2
+2
 1
-2
-2
-# Turn 18: take C6's order (Pasta); Chef starts it - C6 cannot pay in time
-2
-2
+# Turn 18: Chef cooks unit 2 - C6 cannot pay in time
 1
