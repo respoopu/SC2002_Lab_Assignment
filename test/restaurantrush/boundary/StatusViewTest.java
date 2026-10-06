@@ -64,4 +64,10 @@ class StatusViewTest {
         assertTrue(result.contains("Average satisfaction: N/A (target 60) [missed]"), result);
         assertTrue(result.contains("Served: 0 | Unhappy departures: 0 | Turns used: 18/18"), result);
     }
+
+    @Test
+    void stateShowsHappyHourStatus() {
+        String state = view.state(restaurant, scoreboard, List.of());
+        assertTrue(state.contains("Happy Hour: available (once per game)"), state);
+    }
 }

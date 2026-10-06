@@ -8,8 +8,10 @@ import java.util.Scanner;
 import java.util.function.Function;
 import restaurantrush.control.GameConfig;
 import restaurantrush.control.GameUI;
+import restaurantrush.control.Seating;
 import restaurantrush.control.WaiterTask;
 import restaurantrush.entity.Customer;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Scoreboard;
@@ -49,6 +51,29 @@ public class GameCLI implements GameUI {
     @Override
     public void showState(Restaurant restaurant, Scoreboard scoreboard, List<String> availableTasks) {
         out.println(view.state(restaurant, scoreboard, availableTasks));
+    }
+
+    @Override
+    public boolean askActivateHappyHour(HappyHour happyHour) {
+        out.println("Happy Hour is available (once per game; lasts this turn and the next).");
+        out.println("  1) Activate now");
+        out.println("  0) Not yet");
+        return readChoice("Happy Hour> ", 0, 1) == 1;
+    }
+
+    @Override
+    public Optional<Seating> chooseHostSeating(Restaurant restaurant) {
+        while (true) {
+            Optional<Customer> customer = pick("Host, choose a customer to seat (0 = Wait):",
+                    restaurant.presentCustomers(), view::describeCustomer);
+            if (customer.isEmpty()) {
+                return Optional.empty();
+            }
+            Optional<Table> table = pick("At which table? (0 = back)", restaurant.tables(), view::describeTable);
+            if (table.isPresent()) {
+                return Optional.of(new Seating(customer.get(), table.get()));
+            }
+        }
     }
 
     @Override

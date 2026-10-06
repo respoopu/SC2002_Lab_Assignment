@@ -25,6 +25,7 @@ public class StatusView {
         text.append("Revenue: ").append(scoreboard.revenue())
                 .append(" | Avg satisfaction (paid): ").append(average(scoreboard))
                 .append(" | Paid customers: ").append(scoreboard.paidCount()).append('\n');
+        text.append("Happy Hour: ").append(restaurant.happyHour().status()).append('\n');
         text.append("Waiting queue: ").append(queue(restaurant.waitingQueue())).append('\n');
         text.append("Tables: ").append(restaurant.tables().stream()
                 .map(this::describeTable).collect(Collectors.joining(" | "))).append('\n');

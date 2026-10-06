@@ -2,6 +2,7 @@ package restaurantrush.control;
 
 import restaurantrush.entity.Cashier;
 import restaurantrush.entity.Chef;
+import restaurantrush.entity.Host;
 import restaurantrush.entity.Money;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Waiter;
@@ -17,6 +18,6 @@ final class Games {
     }
 
     static GameController controller(GameConfig config, Restaurant restaurant, ArrivalSchedule schedule, GameUI ui) {
-        return new GameController(config, restaurant, schedule, new Waiter(), new Chef(), new Cashier(), ui);
+        return new GameController(config, restaurant, schedule, new Host(), new Waiter(), new Chef(), new Cashier(), ui);
     }
 }

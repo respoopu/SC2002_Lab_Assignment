@@ -172,4 +172,47 @@ class RestaurantTest {
         assertTrue(restaurant.applyWaitingDecay().isEmpty());
         assertEquals(CustomerStatus.SERVED, critic.status());
     }
+
+    @Test
+    void happyHourPriceAppliesAfterTheVipDiscountAndIsLocked() {
+        HappyHour happyHour = new HappyHour();
+        Restaurant promoted = new Restaurant(restaurant.menu(), 2, new TurnLog(), happyHour);
+        Customer vip = new VIPCustomer(2, 4);
+        promoted.admit(vip);
+        promoted.seat(vip, promoted.table(1));
+        happyHour.activate();
+
+        ActionResult result = promoted.placeOrder(vip, 4);
+
+        assertEquals("C2 orders Burger ($15.00, 1 unit) - bill $10.80 (Happy Hour price).", result.message());
+        happyHour.endTurn();
+        happyHour.endTurn();
+        assertEquals(new Money(1080), vip.order().price());
+    }
+
+    @Test
+    void ordersOutsideHappyHourPayTheNormalPrice() {
+        Order order = Dining.seatedWithOrder(restaurant, c2, 4);
+        assertEquals(Money.ofDollars(15), order.price());
+    }
+
+    @Test
+    void happyHourRecoveryHelpsOnlyCustomersStillWaitingAndCapsAt100() {
+        Customer c3 = new RegularCustomer(3, 1);
+        restaurant.admit(c1);
+        restaurant.admit(c2);
+        restaurant.applyWaitingDecay();
+        restaurant.applyWaitingDecay();
+        restaurant.seat(c1, restaurant.table(1));
+        restaurant.placeOrder(c1, 3);
+        Dining.cookFully(c1.order(), 3);
+        restaurant.serve(c1.order(), 4);
+        restaurant.admit(c3);
+
+        restaurant.recoverAwaitingCustomers(15);
+
+        assertEquals(84, c1.satisfaction());
+        assertEquals(99, c2.satisfaction());
+        assertEquals(100, c3.satisfaction());
+    }
 }

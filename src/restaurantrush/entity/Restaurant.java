@@ -13,17 +13,24 @@ import java.util.List;
 public class Restaurant {
     private final Menu menu;
     private final TurnLog log;
+    private final HappyHour happyHour;
     private final List<Table> tables = new ArrayList<>();
     private final List<Customer> waitingQueue = new ArrayList<>();
     private final List<Customer> customers = new ArrayList<>();
     private final List<Order> orders = new ArrayList<>();
 
+    /** A restaurant whose Happy Hour is never switched on. */
     public Restaurant(Menu menu, int tableCount, TurnLog log) {
+        this(menu, tableCount, log, new HappyHour());
+    }
+
+    public Restaurant(Menu menu, int tableCount, TurnLog log, HappyHour happyHour) {
         if (tableCount < 1) {
             throw new IllegalArgumentException("A restaurant needs at least one table");
         }
         this.menu = menu;
         this.log = log;
+        this.happyHour = happyHour;
         for (int number = 1; number <= tableCount; number++) {
             tables.add(new Table(number));
         }
@@ -35,6 +42,10 @@ public class Restaurant {
 
     public TurnLog log() {
         return log;
+    }
+
+    public HappyHour happyHour() {
+        return happyHour;
     }
 
     public List<Table> tables() {
@@ -127,11 +138,12 @@ public class Restaurant {
             return ActionResult.fail(customer.id() + " has already ordered");
         }
         MenuItem item = customer.chooseItem(menu);
-        Money price = customer.priceFor(item);
+        Money price = happyHour.adjust(customer.priceFor(item));
         Order order = new Order(customer, item, price, turn);
         orders.add(order);
         customer.attachOrder(order);
-        return ActionResult.ok(customer.id() + " orders " + item + " - bill " + price + ".");
+        String promotion = happyHour.isActive() ? " (Happy Hour price)" : "";
+        return ActionResult.ok(customer.id() + " orders " + item + " - bill " + price + promotion + ".");
     }
 
     ActionResult serve(Order order, int turn) {
@@ -151,6 +163,17 @@ public class Restaurant {
             if (customer.status() == CustomerStatus.SERVED && customer.servedTurn() < turn) {
                 customer.markReadyToPay(turn);
                 log.add(customer.id() + " finished eating and is READY_TO_PAY.");
+            }
+        }
+    }
+
+    /** Happy Hour: everyone still waiting for a table or food recovers satisfaction (capped at 100). */
+    public void recoverAwaitingCustomers(int amount) {
+        for (Customer customer : customers) {
+            if (customer.isAwaitingService()) {
+                customer.recover(amount);
+                log.add(customer.id() + " enjoys Happy Hour: +" + amount
+                        + " satisfaction (now " + customer.satisfaction() + ").");
             }
         }
     }

@@ -4,27 +4,45 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Scoreboard;
 
 /**
  * A GameUI that replays decisions registered per turn and records what was
- * shown. When no decision is registered for a prompt, the staff member waits.
+ * shown. When no decision is registered for a prompt, the staff member waits
+ * and Happy Hour is declined.
  */
 class ScriptedUI implements GameUI {
+    private final Map<Integer, Deque<Function<Restaurant, Optional<Seating>>>> hostSteps = new HashMap<>();
     private final Map<Integer, Deque<Function<Restaurant, WaiterTask>>> waiterSteps = new HashMap<>();
     private final Map<Integer, Deque<Function<Restaurant, Optional<Order>>>> chefSteps = new HashMap<>();
+    private final Set<Integer> happyHourTurns = new HashSet<>();
     final List<String> messages = new ArrayList<>();
     List<String> lastTasks = List.of();
     int turn;
+    int happyHourPrompts;
+    int hostPrompts;
     int waiterPrompts;
     int chefPrompts;
     Boolean victory;
+
+    ScriptedUI happyHourOn(int turn) {
+        happyHourTurns.add(turn);
+        return this;
+    }
+
+    ScriptedUI hostOn(int turn, Function<Restaurant, Optional<Seating>> step) {
+        hostSteps.computeIfAbsent(turn, t -> new ArrayDeque<>()).add(step);
+        return this;
+    }
 
     ScriptedUI waiterOn(int turn, Function<Restaurant, WaiterTask> step) {
         waiterSteps.computeIfAbsent(turn, t -> new ArrayDeque<>()).add(step);
@@ -53,6 +71,19 @@ class ScriptedUI implements GameUI {
     @Override
     public void showState(Restaurant restaurant, Scoreboard scoreboard, List<String> availableTasks) {
         lastTasks = availableTasks;
+    }
+
+    @Override
+    public boolean askActivateHappyHour(HappyHour happyHour) {
+        happyHourPrompts++;
+        return happyHourTurns.contains(turn);
+    }
+
+    @Override
+    public Optional<Seating> chooseHostSeating(Restaurant restaurant) {
+        hostPrompts++;
+        Deque<Function<Restaurant, Optional<Seating>>> steps = hostSteps.get(turn);
+        return steps == null || steps.isEmpty() ? Optional.empty() : steps.poll().apply(restaurant);
     }
 
     @Override

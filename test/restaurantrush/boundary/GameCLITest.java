@@ -1,6 +1,7 @@
 package restaurantrush.boundary;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,7 +13,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import restaurantrush.control.GameSetup;
+import restaurantrush.control.Seating;
 import restaurantrush.control.WaiterTask;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.RegularCustomer;
 import restaurantrush.entity.Restaurant;
@@ -98,5 +101,24 @@ class GameCLITest {
     void echoModePrintsEachAnswerAfterItsPrompt() {
         cli("0\n", true).chooseWaiterTask(restaurant);
         assertTrue(printed().contains("Waiter> 0"));
+    }
+
+    @Test
+    void hostSeatingNamesTheCustomerAndTable() {
+        Seating seating = cli("2\n2\n").chooseHostSeating(restaurant).orElseThrow();
+        assertEquals("C2", seating.customer().id());
+        assertEquals(2, seating.table().number());
+    }
+
+    @Test
+    void hostCanWaitOrGoBackFromTheTableList() {
+        assertEquals(Optional.empty(), cli("0\n").chooseHostSeating(restaurant));
+        assertEquals(Optional.empty(), cli("1\n0\n0\n").chooseHostSeating(restaurant));
+    }
+
+    @Test
+    void happyHourQuestionIsYesOrNo() {
+        assertTrue(cli("1\n").askActivateHappyHour(new HappyHour()));
+        assertFalse(cli("0\n").askActivateHappyHour(new HappyHour()));
     }
 }

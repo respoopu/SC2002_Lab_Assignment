@@ -41,13 +41,15 @@ java -cp out/main restaurantrush.boundary.Main
 
 | Script | Strategy | Expected result |
 |---|---|---|
-| `victory.txt` | Seat, order and serve each customer as early as possible; serve READY dishes before seating new arrivals | VICTORY: 5 paid, $64.50, average satisfaction 78.0 |
-| `defeat.txt` | Shows invalid input being rejected, then leaves the Waiter idle all game | DEFEAT: 0 paid, $0.00, average N/A, 2 unhappy departures (C1 and the Critic) |
+| `victory.txt` | Host seats every arrival so the Waiter can take the order the same turn; Happy Hour on turn 8 keeps the Critic happy while the Pasta finishes; serve READY dishes before anything else | VICTORY: 5 paid, $86.40, average satisfaction 89.4 |
+| `defeat.txt` | Shows invalid input being rejected, then nobody acts all game | DEFEAT: 0 paid, $0.00, average N/A, 2 unhappy departures (C1 and the Critic) |
 
 ## How to play
 
 Every prompt is a numbered list: type the number and press Enter.
 
+- **Happy Hour** (once per game): at the start of a turn you may switch it on. It lasts that turn and the next.
+- **Host** (one task per turn): seat a waiting customer at a free table, in addition to the Waiter's task. `0` waits.
 - **Waiter** (one task per turn): seat a waiting customer at a free table, take a seated customer's order, or serve a READY dish. `0` waits.
 - **Chef** (one preparation unit per turn): choose an order to advance. `0` waits.
 - **Cashier**: automatic. Takes one payment per turn, oldest first.
@@ -64,15 +66,24 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 | VIP | 5 | 10% off | — |
 | Critic | 12 | Full price | Cold-food penalty: if the dish is served more than one turn after it became READY, the Critic loses 20 satisfaction |
 
-| Menu item | Price | Preparation units |
+| Menu item (rotation order) | Price | Preparation units |
 |---|---|---|
 | Salad | $9.00 | 1 |
 | Burger | $15.00 | 1 |
 | Pasta | $18.00 | 2 |
+| Salad + Burger combo | $21.60 | 2 |
+| Salad + Pasta combo | $24.30 | 3 |
+| Burger + Pasta combo | $29.70 | 3 |
+
+A combo's preparation units are the sum of its two items, and its price is 90% of their combined price, rounded to the cent.
 
 **Victory:** at the end of turn 18, at least 4 paid customers, revenue of at least $45.00, and an average satisfaction of paid customers of at least 60. Otherwise, defeat.
 
-**Food choice:** customers choose, never the manager. The rule is rotation by arrival number: customer #1 orders the first menu item, #2 the second, #3 the third, and then the cycle repeats. The choice is shown when the order is taken.
+**Food choice:** customers choose, never the manager. The rule is rotation by arrival number over the menu above: customer #1 orders the first item, #2 the second, and so on, so in the base setting every customer orders something different (#4 to #6 order the combos). The choice is shown when the order is taken.
+
+**Happy Hour:** can be switched on once per game, at the start of a turn, and lasts that turn and the next; the status line shows how many turns remain. Orders taken while it is active get 20% off, applied after the VIP discount (a VIP Burger costs $15.00 x 0.9 x 0.8 = $10.80); the price is locked when the order is taken. During each active turn, customers still waiting for a table or for food recover 15 satisfaction (maximum 100).
+
+**Host:** seats at most one queued customer per turn, before the Waiter acts, using the same seating rules as the Waiter.
 
 **Interpretations of the brief:**
 
@@ -84,6 +95,9 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 6. Money is stored as integer cents and shown as dollars with two decimals.
 7. A served customer never leaves. A Critic whose satisfaction drops to 0 because of cold food still eats and pays; abandonment applies only to customers who have not been served.
 8. Discounts are rounded half-up to the cent.
+9. Each turn runs: arrivals, state display, the Happy Hour question, Happy Hour recovery (if active), Host, Waiter, Chef, payment, eating, waiting and abandonment, then the turn summary.
+10. Happy Hour recovery applies to the same customers who lose satisfaction at the end of the turn: waiting for a table, seated without an order, or ordered but not yet served.
+11. Happy Hour may be switched on during turn 18; it then covers only turn 18.
 
 ## Project structure
 
@@ -91,7 +105,7 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 |---|---|
 | `restaurantrush.boundary` | Console: `Main`, `GameCLI`, `StatusView`. Shows state and collects choices; no game rules. |
 | `restaurantrush.control` | `GameController` (turn sequence), `GameUI` (the controller's view of the manager), `ArrivalSchedule`, `GameConfig`, `GameSetup`. |
-| `restaurantrush.entity` | Domain objects that own the rules: `Restaurant`, the `Customer` hierarchy, `Order`, `Menu`/`MenuItem`/`Dish`, `Table`, the `Staff` hierarchy, `Money`, `Scoreboard`. |
+| `restaurantrush.entity` | Domain objects that own the rules: `Restaurant`, the `Customer` hierarchy (Regular, VIP, Critic), `Order`, `Menu`/`MenuItem` with `Dish` and `ComboMeal`, `HappyHour`, `Table`, the `Staff` hierarchy (Host, Waiter, Chef, Cashier), `Money`, `Scoreboard`. |
 
 ## Stages
 
@@ -99,6 +113,7 @@ Base setting: 18 turns, 2 tables, one Waiter, Chef and Cashier, and one customer
 |---|---|
 | `stage-1` | Regular customers, menu, Waiter, Chef, Cashier, the full turn sequence, victory and defeat |
 | `stage-2` | VIP and Critic customers |
+| `stage-3` | Host, ComboMeal and Happy Hour |
 
 ## Changes between stages
 
@@ -118,6 +133,29 @@ Changed files:
 - `runs/*.txt`: comments only. The inputs are identical because every customer type follows the same service flow.
 
 Unchanged: `GameController`, `Waiter`, `Chef`, `Cashier`, `Order`, `GameCLI`, `StatusView`. Different behaviour is dispatched through the customer objects (`lossPerTurn()`, `priceFor()`, `onServed()`), so the controller has no type checks.
+
+### Stage 2 → Stage 3 ([compare](https://github.com/respoopu/SC2002_Lab_Assignment/compare/stage-2...stage-3))
+
+New files:
+- `entity/ComboMeal.java`: a `MenuItem` composed of two `MenuItem`s; price and preparation units derive from its parts.
+- `entity/HappyHour.java`: the once-per-game promotion (activation, countdown, 20% price adjustment, status text).
+- `entity/Host.java`: a `Staff` member that seats one customer per turn via `Restaurant.seat()`.
+- `control/Seating.java`: the manager's instruction to the Host.
+- Tests: `ComboMealTest`, `HappyHourTest`, `HostTest`.
+
+Changed files:
+- `entity/Customer.java`: added `recover(points)`, because Happy Hour raises satisfaction (capped at 100).
+- `entity/Restaurant.java`: holds the `HappyHour`; `placeOrder()` applies `happyHour.adjust(...)` after the customer's own discount, which is the moment the price is locked; added `recoverAwaitingCustomers()`. The original three-argument constructor is kept (a restaurant whose Happy Hour is never used), so earlier tests are unchanged.
+- `control/GameUI.java`: added `askActivateHappyHour()` and `chooseHostSeating()`; a new staff role and a new manager decision need new questions.
+- `control/GameController.java`: added the Happy Hour step and the Host step before the Waiter, and the Happy Hour countdown at the end of the turn. The rest of the turn sequence is unchanged.
+- `control/GameSetup.java`: registers the three combos on the menu, creates the Host and the Happy Hour, edition label.
+- `boundary/GameCLI.java`: the Happy Hour and Host prompts. `boundary/StatusView.java`: the Happy Hour status line.
+- Tests: `ScriptedUI` and `Games` (test helpers) support the Host and Happy Hour; `RunScriptsTest` expects the Stage 3 results; new tests in `RestaurantTest`, `GameControllerTest`, `GameCLITest`, `StatusViewTest`.
+- `runs/*.txt`: new answers for the Happy Hour and Host prompts.
+
+Unchanged: the food-choice rule (`Menu.itemFor`), all customer classes except `Customer.recover`, `Order`, `Waiter`, `Chef`, `Cashier`, `ArrivalSchedule`. Combos reach customers through the existing rotation rule with no code change, only menu registration.
+
+Alternative considered: a list of "staff decision phases" that the controller loops over, so the Host would be registered without editing `GameController`. We kept the direct version because it is one addition and easier to read; the trade-off is one controller edit per new role.
 
 ## Video timestamps
 
