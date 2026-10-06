@@ -1,0 +1,41 @@
+' Notes for the customer, order and menu classes (class-model.iuml).
+package entity {
+  note right of Customer
+    <b>Polymorphism</b>
+    No class checks a customer's type. lossPerTurn(),
+    priceFor() and onServed() are dispatched to the
+    subclass: a VIP pays 10% less and loses 5 per waiting
+    turn; a Critic loses 12 and takes -20 when served more
+    than one turn after the dish became READY.
+  end note
+
+  note bottom of Order
+    <b>Encapsulation</b>
+    The status-changing methods of Customer, Order and Table
+    and Restaurant's seat, placeOrder and serve are
+    package-private (~), and they check their preconditions
+    (requireStatus, canCook, canServe, Table.assign), so no
+    caller can put an object into an invalid status. Query
+    methods return unmodifiable lists. The Order constructor
+    is package-private too:
+    no code outside the entity package can create an order,
+    and in the game only Restaurant.placeOrder() does, locking
+    the price as happyHour.adjust(customer.priceFor(item)).
+  end note
+
+  note bottom of ComboMeal
+    <b>Composite pattern</b>
+    A ComboMeal is a MenuItem made of two MenuItems and
+    delegates to them: prepUnits = sum of the parts,
+    price = 90% of their total. Order only sees MenuItem,
+    so combos needed no change there. The parts are shared
+    (Salad is sold alone and is in two combos), so this is
+    aggregation (hollow diamond), not composition.
+  end note
+
+  note bottom of Money
+    Immutable value in integer cents. The constructor
+    rejects negative amounts; percentOff() rounds
+    half-up to the cent.
+  end note
+}

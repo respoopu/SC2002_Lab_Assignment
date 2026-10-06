@@ -1,0 +1,33 @@
+@startuml class-detail-2-control
+' Class diagram detail page 2 of 4: the control package. Classes from other pages appear as collapsed boxes.
+' The model is in class-model.iuml; render with render.sh.
+!$getters = %false()
+!$links_boundary = %false()
+!$links_control = %true()
+!$links_restaurant = %false()
+!$links_orders = %false()
+!include class-model.iuml
+!include class-dependencies.iuml
+!include class-notes-control.iuml
+!include class-legend.iuml
+remove $x2
+hide GameCLI members
+hide Restaurant members
+hide Scoreboard members
+hide HappyHour members
+hide TurnLog members
+hide Host members
+hide Waiter members
+hide Chef members
+hide Cashier members
+hide RegularCustomer members
+hide VIPCustomer members
+hide CriticCustomer members
+' layout hints only (no meaning)
+GameUI -[hidden]down- ArrivalSchedule
+GameConfig -[hidden]down- WaiterTask
+ArrivalSchedule -[hidden]down- Seating
+Seating -[hidden]down- Host
+Kind -[hidden]down- Host
+title Restaurant Rush - class diagram, detail 2 of 4: the control package (tag stage-3)\nBoxes without compartments are detailed on another page.
+@enduml

@@ -7,11 +7,13 @@ cd "$(dirname "$0")"
 JAR="${PLANTUML_JAR:?set PLANTUML_JAR to the path of plantuml.jar}"
 rm -f ./*.png ./*.svg ./*.cmapx
 for fmt in png svg; do
-  java -DPLANTUML_LIMIT_SIZE=30000 -jar "$JAR" -t"$fmt" \
-    class-diagram.puml class-diagram-overview.puml sequence-diagram.puml
-  # PlantUML names the pages of a multi-page diagram name, name_001, name_002...; number them 1-4 instead.
+  java -DPLANTUML_LIMIT_SIZE=30000 -jar "$JAR" -t"$fmt" class-diagram.puml class-diagram-overview.puml \
+    class-detail-*.puml sequence-diagram.puml
+  # PlantUML names the pages of a multi-page diagram name, name_001, name_002...; number them from 1 instead.
   mv "sequence-diagram.$fmt" "sequence-diagram-1.$fmt"
-  for i in 1 2 3; do
-    mv "sequence-diagram_00$i.$fmt" "sequence-diagram-$((i + 1)).$fmt"
+  for page in sequence-diagram_*."$fmt"; do
+    n=${page#sequence-diagram_}
+    n=$((10#${n%."$fmt"} + 1))
+    mv "$page" "sequence-diagram-$n.$fmt"
   done
 done

@@ -1,7 +1,28 @@
 @startuml class-diagram-overview
-' One-page overview of class-diagram.puml: same classes, relationships and notes, members hidden.
-!include class-diagram.puml
+' One-page overview: the full class model with members hidden.
+!$multiplicities = %false()
+!include class-model.iuml
+!include class-notes-boundary.iuml
+!include class-notes-control.iuml
+!include class-notes-restaurant.iuml
+!include class-notes-orders.iuml
 hide members
 show <<enumeration>> fields
-title Restaurant Rush - class overview (members hidden; full detail in class-diagram)
+
+' layout hints only (no meaning): stack the packages top to bottom
+StatusView -[hidden]down- GameSetup
+InputEndedException -[hidden]down- GameSetup
+Kind -[hidden]down- Staff
+Seating -[hidden]down- Staff
+
+legend bottom left
+  Overview: members, multiplicities and secondary dependencies are hidden; class-diagram and the four
+  detail pages show them. Line labels name the field that holds the link. Italic = abstract.
+  Filled diamond = composition, hollow diamond = aggregation, hollow triangle = generalization
+  (dashed: realization), dashed arrow = dependency, (+) = nested class.
+endlegend
+' layout hints found by checking the rendered SVGs (no meaning)
+Restaurant -[hidden]left- Menu
+Customer -[hidden]right- CustomerStatus
+title Restaurant Rush - class overview (tag stage-3)
 @enduml

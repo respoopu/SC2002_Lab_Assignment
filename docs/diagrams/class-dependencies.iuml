@@ -1,0 +1,32 @@
+' Secondary dependencies: creations, and the calls that carry a game rule or appear in the sequence diagram.
+' Plain getter reads (for example StatusView formatting the state) are not drawn.
+' Included by class-diagram.puml and the detail pages; the overview leaves them out to stay readable.
+!if $links_boundary
+Main ..> GameController : <<use>>
+Main ..> InputEndedException : <<catch>>
+GameCLI ..> InputEndedException : <<throw>>
+GameCLI ..> Restaurant : <<use>>
+GameCLI ..> WaiterTask : <<use>>
+GameCLI ..> Seating : <<create>>
+!endif
+!if $links_control
+GameController ..> HappyHour : <<use>>
+GameController ..> TurnLog : <<use>>
+ArrivalSchedule ..> RegularCustomer : <<create>>
+ArrivalSchedule ..> VIPCustomer : <<create>>
+ArrivalSchedule ..> CriticCustomer : <<create>>
+!endif
+!if $links_restaurant
+Host ..> Restaurant : <<use>>
+Waiter ..> Restaurant : <<use>>
+Cashier ..> Restaurant : <<use>>
+Cashier ..> Customer : <<use>>
+Cashier ..> Order : <<use>>
+Cashier ..> TurnLog : <<use>>
+Chef ..> Order : <<use>>
+!endif
+!if $links_orders
+Customer ..> Menu : <<use>>
+Customer ..> MenuItem : <<use>>
+CriticCustomer ..> TurnLog : <<use>>
+!endif

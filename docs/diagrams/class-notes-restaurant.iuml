@@ -1,0 +1,18 @@
+' Notes for the restaurant and staff classes (class-model.iuml).
+package entity {
+  note right of Staff
+    <b>Inheritance: one rule for every role</b>
+    perform() runs an action only if the staff member has
+    not acted this turn, and uses up the task only when the
+    action succeeds, so a rejected choice can be retried.
+    Host and Waiter both seat through Restaurant.seat(),
+    so they can never disagree.
+  end note
+
+  note left of Restaurant
+    <b>Composition</b> (filled diamonds)
+    Restaurant creates its Tables (constructor) and its
+    Orders (placeOrder()) and is their only owner; other
+    objects only refer to them.
+  end note
+}

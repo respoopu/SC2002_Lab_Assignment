@@ -1,0 +1,17 @@
+' Legend shared by the class diagrams that show members.
+legend bottom left
+  Visibility: + public, - private, # protected, ~ package-private. Underlined = static, italic = abstract.
+  <<final>> = final class, {leaf} = final method, {readOnly} = constant, [0..1] = may be null, (+) = nested class.
+  <<record>>: components are private final fields with public accessors of the same name.
+  Associations are drawn without arrowheads: each is navigable from the class holding the field named on the line
+  (both ways for "Customer sits at Table" and "Customer places Order"). Those fields also appear as attributes,
+  except that Money values and the fields of records are shown as attributes only.
+  Dependencies: <<create>> instantiates, <<use>> calls, <<throw>> / <<catch>> an exception. Drawn for creations and
+  for calls that carry a game rule or appear in the sequence diagram; plain getter reads are not drawn.
+  Not drawn: record accessors, equals/hashCode/toString of records, enum values()/valueOf(),
+  implicit default constructors and lambdas.
+!if %not($getters)
+  This page also leaves out simple getters (a method named after the field it returns), but keeps overrides
+  such as Dish.price(); class-diagram shows every getter. Only the links of this page's classes are drawn.
+!endif
+endlegend

@@ -1,0 +1,21 @@
+@startuml class-detail-1-boundary
+' Class diagram detail page 1 of 4: the boundary package. Classes from other pages appear as collapsed boxes.
+' The model is in class-model.iuml; render with render.sh.
+!$getters = %false()
+!$links_boundary = %true()
+!$links_control = %false()
+!$links_restaurant = %false()
+!$links_orders = %false()
+!include class-model.iuml
+!include class-dependencies.iuml
+!include class-notes-boundary.iuml
+!include class-legend.iuml
+remove $x1
+hide GameUI members
+hide GameSetup members
+hide GameController members
+hide WaiterTask members
+hide Seating members
+hide Restaurant members
+title Restaurant Rush - class diagram, detail 1 of 4: the boundary package (tag stage-3)\nBoxes without compartments are detailed on another page.
+@enduml

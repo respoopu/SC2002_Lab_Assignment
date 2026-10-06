@@ -2,9 +2,10 @@
 
 This describes the final design at tag `stage-3`. The diagrams are in [`docs/diagrams/`](../diagrams/):
 
-- the [class diagram](../diagrams/class-diagram.svg), with every member;
-- a one-page [overview](../diagrams/class-diagram-overview.svg);
-- the [sequence diagram](../diagrams/sequence-diagram-1.svg), in four parts.
+- a one-page class [overview](../diagrams/class-diagram-overview.svg) of every class and its structural relationships;
+- four class detail pages with attributes, operations and multiplicities: [boundary](../diagrams/class-detail-1-boundary.svg), [control](../diagrams/class-detail-2-control.svg), [restaurant and staff](../diagrams/class-detail-3-restaurant-staff.svg), and [customers, orders and the menu](../diagrams/class-detail-4-customers-orders-menu.svg);
+- the full [class diagram](../diagrams/class-diagram.svg) on one canvas, best viewed zoomed in;
+- the [sequence diagram](../diagrams/sequence-diagram-1.svg), in ten parts.
 
 Class names refer to `src/restaurantrush/`.
 
@@ -23,7 +24,7 @@ Dependencies point one way only: boundary → control → entity. The entity pac
 | Abstraction | Package | Responsibility | Works with |
 |---|---|---|---|
 | `GameController` | control | Plays all 18 turns and runs each turn's steps in the brief's order: arrival, Happy Hour, Host, Waiter, Chef, payment, eating, waiting. Asks `GameUI` for each decision and hands it to the right staff member. If the decision is rejected, shows the reason and asks again. Knows the order of the steps, not the rules inside them. | `GameUI`, the staff, `Restaurant`, `HappyHour`, `GameConfig` |
-| `GameUI` (interface) | control | The manager as the controller sees them: show the state and messages, ask for the Happy Hour, Host, Waiter and Chef decisions, show the result. | implemented by `GameCLI` and by test doubles |
+| `GameUI` (interface) | control | The manager as the controller sees them: show the state and messages, ask for the Happy Hour, Host, Waiter and Chef decisions, show the result. | implemented by `GameCLI` and by the test double `ScriptedUI` |
 | `GameCLI` | boundary | The console version of `GameUI`: numbered menus, asking again on malformed input, skipping `#` comment lines in scripted runs. Calls read-only domain checks such as `Restaurant.canSeat()` to reject a choice early, but the rule itself stays in the domain. | `StatusView`, `Restaurant` (read-only) |
 | `StatusView` | boundary | Turns the state and results into text: dollars with two decimals, the average or N/A. | `Restaurant`, `Scoreboard` |
 | `GameSetup`, `GameConfig`, `ArrivalSchedule` | control | Build and configure the game. `GameSetup` assembles the base-setting game. `GameConfig` holds the 18 turns, 2 tables and three targets, and decides victory. `ArrivalSchedule` says which customer type arrives on which turn. | entity constructors |
@@ -49,10 +50,10 @@ The exception is `Restaurant`, the largest class at 206 lines. It owns the rules
 
 | Concept | Where | Why it matters here |
 |---|---|---|
-| Encapsulation | Seating, ordering, serving and every status change of a customer, order or table are package-private, and checked by the object that owns the state: `Customer.requireStatus()`, `Order.canCook()` and `canServe()`, `Table.assign()`. Control and boundary code reach them only through staff actions, and otherwise receive read-only queries and unmodifiable lists. The few public commands the controller calls, such as `admit()`, `finishEating()` and `applyWaitingDecay()`, apply their rules internally: the controller decides when a step happens, never how. `Order`'s constructor is package-private, so only `Restaurant.placeOrder()` can create an order and lock its price. `RestaurantEncapsulationTest` checks that `Restaurant.seat()`, `placeOrder()`, `serve()` and `Customer.decay()` stay non-public. | Neither the UI nor the controller can bypass a rule. An illegal status change throws an exception rather than quietly corrupting the game. |
+| Encapsulation | The methods that change a customer's, order's or table's status (`seatAt`, `attachOrder`, `markServed`, `markPaid`, `leave`, `cook`, `cancel`, `assign`, ...) and `Restaurant.seat()`, `placeOrder()` and `serve()` are package-private, and each checks its own preconditions: `Customer.requireStatus()`, `Order.canCook()` and `canServe()`, `Table.assign()`. Code outside the entity package changes a customer's, order's or table's status only through the staff actions and a few public turn steps (`admit()`, `finishEating()`, `recoverAwaitingCustomers()`, `applyWaitingDecay()`), which go through the same checked methods: the controller decides when a step happens, not how. Queries return unmodifiable lists. `Order`'s constructor is package-private, so no code outside the entity package can create an order; in the game only `Restaurant.placeOrder()` does, locking the price. `RestaurantEncapsulationTest` checks that `Restaurant.seat()`, `placeOrder()`, `serve()` and `Customer.decay()` stay non-public. | No caller can put an object into an invalid status: an illegal status change throws an exception rather than quietly corrupting the game. |
 | Inheritance | The `Customer`, `Staff` and `MenuItem` hierarchies. | The customer lifecycle, the one-task-per-turn rule and the pricing interface are each written once. |
 | Polymorphism | `lossPerTurn()`, `priceFor()` and `onServed()` on customers; `price()` and `prepUnits()` on menu items. Nothing in `src/` checks a customer's or menu item's type: there is no `instanceof` and no switch on a class. | New customer types and combos plug into the existing order and service flow. |
-| Composition | `ComboMeal` is made of two `MenuItem`s and delegates to them. `Restaurant` owns its tables and orders, `GameController` owns its `Scoreboard`, and `GameCLI` owns its `StatusView`. | A combo reuses the dishes' prices and preparation units instead of copying them. |
+| Composition | `Restaurant` creates its tables and orders and is their only owner (UML composition); `GameController` owns its `Scoreboard` and `GameCLI` its `StatusView` in the same way. `ComboMeal` uses object composition (the Composite pattern): it is made of two `MenuItem`s and delegates to them. Its parts are shared with the menu, so the class diagram draws that link as aggregation. | No other class can add, remove or replace the restaurant's tables and orders, and a combo reuses the dishes' prices and preparation units instead of copying them. |
 
 ## 4. Design principles, where the code reflects them
 
@@ -109,6 +110,7 @@ ISP is not strongly reflected, and that was a choice. `GameUI` has nine methods 
 | Food is chosen by a fixed rotation over arrival numbers | Every run is reproducible, so the scripts in `runs/` double as exact tests, and combos are reached by the same rule. | Less variety: a player who reads the rule knows every order in advance. |
 | `Money` stored as integer cents | Discounts are exact and follow one rounding rule ($15 × 0.9 × 0.8 = $10.80). | Slightly more code than using `double`. |
 | State-changing methods are package-private | Control and boundary code can change the state only through staff actions. | Tests that need to set up state must live in the entity package (the `Dining` test helper). |
+| The UI is handed the live `Restaurant` to display it | One object to query for everything on screen; no copying of state into view objects. | The UI could in principle call a public turn step such as `applyWaitingDecay()` at the wrong time. A read-only view interface would prevent that at the cost of another interface; `RestaurantEncapsulationTest` guards the most important methods instead. |
 | Events go through a `TurnLog` | Entities can report what happened ("C3 (Critic): cold food!") without depending on the console. | The log must be passed to `onServed()` and emptied by the controller after each step. |
 
 ## 6. An alternative we considered: turn phases
@@ -161,4 +163,4 @@ Each run below is a script in `runs/`, and `RunScriptsTest` replays all of them:
 | `what-if-host-idle.txt` | On turn 13 the Host waits, and the Waiter seats C5. | C5's 3-unit order is taken a turn late, so C5 is ready to pay only on turn 18 and cannot pay. | VICTORY by the narrowest margin: 4 paid (target 4), $62.10. One more lost payment would mean defeat. |
 | `defeat.txt` | The staff always wait. | Nobody is served, and C1 and the Critic run out of patience and leave. | **DEFEAT**: 0 paid, $0.00, average N/A |
 
-The sequence diagram follows turns 7–11 of the victory run. It marks the two choices where these outcomes branch: switching on Happy Hour on turn 8, and serving the Critic on turn 9.
+The sequence diagram follows turns 7–11 of the victory run. It draws the two choices where these outcomes branch as fragments: switching on Happy Hour on turn 8 (both answers), and serving the Critic on turn 9 (fresh or cold). Its result check notes what each choice does to the final score.

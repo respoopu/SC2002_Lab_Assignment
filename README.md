@@ -167,8 +167,8 @@ Alternative considered: a list of "staff decision phases" that the controller lo
 
 ## Design evidence
 
-- [Class diagram](docs/diagrams/class-diagram.svg) of the final (`stage-3`) code, plus a one-page [overview](docs/diagrams/class-diagram-overview.svg).
-- [Sequence diagram](docs/diagrams/sequence-diagram-1.svg) in four parts: the Critic's visit in the victory run, from arrival to payment, and the result check.
+- Class diagram of the final (`stage-3`) code: a one-page [overview](docs/diagrams/class-diagram-overview.svg), four detail pages ([boundary](docs/diagrams/class-detail-1-boundary.svg), [control](docs/diagrams/class-detail-2-control.svg), [restaurant and staff](docs/diagrams/class-detail-3-restaurant-staff.svg), [customers, orders and the menu](docs/diagrams/class-detail-4-customers-orders-menu.svg)) and the [full diagram](docs/diagrams/class-diagram.svg) on one canvas.
+- [Sequence diagram](docs/diagrams/sequence-diagram-1.svg) in ten parts: the Critic's visit in the victory run, from arrival to payment, and the result check.
 - [Design discussion](docs/report/design-discussion.md): responsibilities, design principles, trade-offs, the alternative we considered, and how the player's choices change the result.
 
 Sources and re-rendering instructions are in [`docs/diagrams/`](docs/diagrams/README.md).
